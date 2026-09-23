@@ -17,9 +17,9 @@ import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
@@ -35,7 +35,7 @@ public class UserController {
         this.userService = userService;
     }
 
-    private UserResponse toResponse(com.expensetracker.entity.User user) {
+    private UserResponse toResponse(User user) {
         return new UserResponse(
             user.getId(), 
             user.getUsername(), 
@@ -77,7 +77,7 @@ public class UserController {
         return toResponse(entity);
     }
 
-    @PutMapping("/{id}/username")
+    @PatchMapping("/api/users/{id}/username")
     @ResponseStatus(HttpStatus.OK)
     public UserResponse updateUsername(
         @PathVariable Long id, 
@@ -86,7 +86,7 @@ public class UserController {
             return toResponse(updatedUser);
         }
 
-    @PutMapping("/{id}/email")
+    @PatchMapping("/api/users/{id}/email")
     @ResponseStatus(HttpStatus.OK)
     public UserResponse updateEmail(
         @PathVariable Long id,
@@ -95,7 +95,7 @@ public class UserController {
             return toResponse(updatedUser);
         }
 
-    @PutMapping("/{id}/password")
+    @PatchMapping("/api/users/{id}/password")
     @ResponseStatus(HttpStatus.OK)
     public UserResponse updatePassword(
         @PathVariable Long id,
