@@ -77,7 +77,7 @@ public class UserController {
         return toResponse(entity);
     }
 
-    @PatchMapping("{id}/username")
+    @PatchMapping("/{id}/username")
     @ResponseStatus(HttpStatus.OK)
     public UserResponse updateUsername(
         @PathVariable Long id, 
@@ -86,7 +86,7 @@ public class UserController {
             return toResponse(updatedUser);
         }
 
-    @PatchMapping("{id}/email")
+    @PatchMapping("/{id}/email")
     @ResponseStatus(HttpStatus.OK)
     public UserResponse updateEmail(
         @PathVariable Long id,
@@ -95,7 +95,7 @@ public class UserController {
             return toResponse(updatedUser);
         }
 
-    @PatchMapping("{id}/password")
+    @PatchMapping("/{id}/password")
     @ResponseStatus(HttpStatus.OK)
     public UserResponse updatePassword(
         @PathVariable Long id,
