@@ -15,16 +15,20 @@ import com.expensetracker.repository.ExpenseRepository;
 public class ExpenseService {
     
     private final ExpenseRepository expenseRepository;
+
+    private final UserService userService;
     
-    public ExpenseService(ExpenseRepository expenseRepository) {
+    public ExpenseService(ExpenseRepository expenseRepository, UserService userService) {
         this.expenseRepository = expenseRepository;
+        this.userService = userService;
     }
 
-    public Expense createExpense(String description, BigDecimal amount, LocalDateTime date, Category category, User user) {
+    public Expense createExpense(String description, BigDecimal amount, LocalDateTime date, Category category, Long userId) {
+        // Assuming you have a method to fetch the user by ID
+        User user = userService.getUserById(userId);
         Expense expense = new Expense(description, amount, date, category, user);
         return expenseRepository.save(expense);
     }
-
 
     public Expense getExpenseById(Long id) {
         return expenseRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(
@@ -37,10 +41,19 @@ public class ExpenseService {
 
     public Expense updateExpense(Long id, String description, BigDecimal amount, LocalDateTime date, Category category) {
         Expense expense = getExpenseById(id);
-        expense.setDescription(description);
-        expense.setAmount(amount);
-        expense.setDate(date);
-        expense.setCategory(category);
+        // Only update the fields that are not null
+        if (description != null) {
+            expense.setDescription(description);
+        }
+        if (amount != null) {
+            expense.setAmount(amount);
+        }
+        if (date != null) {
+            expense.setDate(date);
+        }
+        if (category != null) {
+            expense.setCategory(category);
+        }
         // transactionType and user remain unchanged
         return expenseRepository.save(expense);
     }

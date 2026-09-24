@@ -69,7 +69,7 @@ public class ExpenseController {
             request.amount(), 
             request.date(), 
             request.category(),
-            request.user()
+            request.userId()
         );
         return toResponse(entity);
     }
