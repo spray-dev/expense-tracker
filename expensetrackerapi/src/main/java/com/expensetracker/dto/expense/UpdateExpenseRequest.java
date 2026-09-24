@@ -5,22 +5,16 @@ import java.time.LocalDateTime;
 
 import com.expensetracker.entity.Category;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
 public record UpdateExpenseRequest(
-    @NotBlank(message = "Description cannot be blank")
     String description,
-
-    @NotNull
+        
     @PositiveOrZero 
     BigDecimal amount,
 
-    @NotNull
     LocalDateTime date,
 
-    @NotNull
     Category category
 ) {
 }

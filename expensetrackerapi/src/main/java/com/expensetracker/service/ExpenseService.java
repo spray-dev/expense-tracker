@@ -24,7 +24,6 @@ public class ExpenseService {
     }
 
     public Expense createExpense(String description, BigDecimal amount, LocalDateTime date, Category category, Long userId) {
-        // Assuming you have a method to fetch the user by ID
         User user = userService.getUserById(userId);
         Expense expense = new Expense(description, amount, date, category, user);
         return expenseRepository.save(expense);
@@ -43,6 +42,9 @@ public class ExpenseService {
         Expense expense = getExpenseById(id);
         // Only update the fields that are not null
         if (description != null) {
+            if (description.isBlank()) {
+                throw new IllegalArgumentException("Description cannot be blank");
+            }
             expense.setDescription(description);
         }
         if (amount != null) {
