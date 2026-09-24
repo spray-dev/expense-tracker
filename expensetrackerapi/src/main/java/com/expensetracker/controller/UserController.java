@@ -5,11 +5,11 @@ import java.util.List;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.expensetracker.dto.CreateUserRequest;
-import com.expensetracker.dto.UpdateEmailRequest;
-import com.expensetracker.dto.UpdatePasswordRequest;
-import com.expensetracker.dto.UpdateUsernameRequest;
-import com.expensetracker.dto.UserResponse;
+import com.expensetracker.dto.user.CreateUserRequest;
+import com.expensetracker.dto.user.UpdateEmailRequest;
+import com.expensetracker.dto.user.UpdatePasswordRequest;
+import com.expensetracker.dto.user.UpdateUsernameRequest;
+import com.expensetracker.dto.user.UserResponse;
 import com.expensetracker.entity.User;
 import com.expensetracker.service.UserService;
 

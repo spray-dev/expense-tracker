@@ -1,4 +1,4 @@
-package com.expensetracker.dto;
+package com.expensetracker.dto.user;
 
 public record UserResponse(
     Long id, 
