@@ -6,6 +6,4 @@ import com.expensetracker.entity.Expense;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
-    boolean existsByName(String name);
-
 }
