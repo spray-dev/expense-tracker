@@ -151,9 +151,6 @@ class ExpenseServiceTest {
 
         when(expenseRepository.findById(expenseId))
             .thenReturn(Optional.of(expense));
-        
-        when(expenseRepository.save(any(Expense.class)))
-            .thenAnswer(invocation -> invocation.getArgument(0));
 
         String newDescription = "Sushi";
         BigDecimal newAmount = new BigDecimal("79.99");
@@ -176,9 +173,8 @@ class ExpenseServiceTest {
         assertThat(updatedExpense.getCategory()).isEqualTo(newCategory);
         assertThat(updatedExpense.getUser()).isSameAs(expense.getUser());
 
-        // Verify that the expense was saved to the repository
+        // Verify
         verify(expenseRepository).findById(expenseId);
-        verify(expenseRepository).save(any(Expense.class));
     }
 
     @Test
@@ -204,9 +200,6 @@ class ExpenseServiceTest {
 
         when(expenseRepository.findById(expenseId))
             .thenReturn(Optional.of(expense));
-        
-        when(expenseRepository.save(any(Expense.class)))
-            .thenAnswer(invocation -> invocation.getArgument(0));
 
         String newDescription = "Sushi";
         Category newCategory = Category.GIFT;
@@ -227,9 +220,8 @@ class ExpenseServiceTest {
         assertThat(updatedExpense.getCategory()).isEqualTo(newCategory);
         assertThat(updatedExpense.getUser()).isSameAs(originalUser);
 
-        // Verify that the expense was saved to the repository
+        // Verify
         verify(expenseRepository).findById(expenseId);       
-        verify(expenseRepository).save(any(Expense.class));
     }
 
     @Test

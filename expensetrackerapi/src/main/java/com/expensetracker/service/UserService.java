@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import com.expensetracker.entity.User;
 import com.expensetracker.exception.DuplicateResourceException;
 import com.expensetracker.exception.ResourceNotFoundException;
@@ -11,13 +13,16 @@ import com.expensetracker.repository.UserRepository;
 
 import org.springframework.transaction.annotation.Transactional;
 
+
 @Service
 public class UserService {
     
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }   
 
     public User getUserById(Long id) {
@@ -47,7 +52,10 @@ public class UserService {
         if (userRepository.existsByEmail(email)) {
             throw new DuplicateResourceException("User with email " + email + " already exists");
         }
-        User user = new User(username, password, email);
+
+        String hashedPassword = passwordEncoder.encode(password);
+
+        User user = new User(username, hashedPassword, email);
         return userRepository.save(user);
     }
 
@@ -74,7 +82,8 @@ public class UserService {
     @Transactional 
     public User updatePassword(Long id, String password) {
         User user = getUserById(id);
-        user.setPassword(password);
+        String hashedPassword = passwordEncoder.encode(password);
+        user.setPassword(hashedPassword);
         return user;
     }
 
