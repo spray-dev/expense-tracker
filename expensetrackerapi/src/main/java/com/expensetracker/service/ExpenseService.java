@@ -63,7 +63,7 @@ public class ExpenseService {
             expense.setCategory(category);
         }
         // transactionType and user remain unchanged
-        return expenseRepository.save(expense);
+        return expense;
     }
 
     @Transactional

@@ -58,7 +58,7 @@ public class UserService {
             throw new DuplicateResourceException("User with username " + username + " already exists");
         }
         user.setUsername(username);
-        return userRepository.save(user);
+        return user;
     }
 
     @Transactional 
@@ -68,14 +68,14 @@ public class UserService {
             throw new DuplicateResourceException("User with email " + email + " already exists");
         }
         user.setEmail(email);
-        return userRepository.save(user);
+        return user;
     }
 
     @Transactional 
     public User updatePassword(Long id, String password) {
         User user = getUserById(id);
         user.setPassword(password);
-        return userRepository.save(user);
+        return user;
     }
 
     @Transactional 
