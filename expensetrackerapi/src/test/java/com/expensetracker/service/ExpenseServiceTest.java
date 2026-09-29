@@ -12,6 +12,8 @@ import org.mockito.MockitoAnnotations;
 import com.expensetracker.entity.Category;
 import com.expensetracker.entity.Expense;
 import com.expensetracker.entity.User;
+import com.expensetracker.exception.InvalidResourceException;
+import com.expensetracker.exception.ResourceNotFoundException;
 import com.expensetracker.repository.ExpenseRepository;
 
 import static org.mockito.Mockito.when;
@@ -123,7 +125,7 @@ class ExpenseServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> expenseService.getExpenseById(expenseId))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessage("Expense with id " + expenseId + " does not exist");
 
         // Verify that the expense was retrieved from the repository
@@ -257,7 +259,7 @@ class ExpenseServiceTest {
             null,
             null
         ))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(InvalidResourceException.class)
             .hasMessage("Description cannot be blank");
 
         // Verify that the expense was saved to the repository

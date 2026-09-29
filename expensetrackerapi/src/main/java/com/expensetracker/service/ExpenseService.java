@@ -9,7 +9,11 @@ import org.springframework.stereotype.Service;
 import com.expensetracker.entity.Category;
 import com.expensetracker.entity.Expense;
 import com.expensetracker.entity.User;
+import com.expensetracker.exception.InvalidResourceException;
+import com.expensetracker.exception.ResourceNotFoundException;
 import com.expensetracker.repository.ExpenseRepository;
+
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ExpenseService {
@@ -23,6 +27,7 @@ public class ExpenseService {
         this.userService = userService;
     }
 
+    @Transactional 
     public Expense createExpense(String description, BigDecimal amount, LocalDateTime date, Category category, Long userId) {
         User user = userService.getUserById(userId);
         Expense expense = new Expense(description, amount, date, category, user);
@@ -30,7 +35,7 @@ public class ExpenseService {
     }
 
     public Expense getExpenseById(Long id) {
-        return expenseRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(
+        return expenseRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(
             "Expense with id " + id + " does not exist"));
     }
 
@@ -38,12 +43,13 @@ public class ExpenseService {
         return expenseRepository.findAll();
     }
 
+    @Transactional 
     public Expense updateExpense(Long id, String description, BigDecimal amount, LocalDateTime date, Category category) {
         Expense expense = getExpenseById(id);
         // Only update the fields that are not null
         if (description != null) {
             if (description.isBlank()) {
-                throw new IllegalArgumentException("Description cannot be blank");
+                throw new InvalidResourceException("Description cannot be blank");
             }
             expense.setDescription(description);
         }
@@ -60,6 +66,7 @@ public class ExpenseService {
         return expenseRepository.save(expense);
     }
 
+    @Transactional
     public void deleteExpense(Long id) {
         Expense expense = getExpenseById(id);
         expenseRepository.delete(expense);

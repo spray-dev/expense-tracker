@@ -5,7 +5,11 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.expensetracker.entity.User;
+import com.expensetracker.exception.DuplicateResourceException;
+import com.expensetracker.exception.ResourceNotFoundException;
 import com.expensetracker.repository.UserRepository;
+
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
@@ -17,17 +21,17 @@ public class UserService {
     }   
 
     public User getUserById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(
+        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(
             "User with id " + id + " does not exist"));
     }
     
     public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new IllegalArgumentException(
+        return userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException(
             "User with username " + username + " does not exist"));
     }
     
     public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException(
+        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException(
             "User with email " + email + " does not exist"));
     }
 
@@ -35,41 +39,46 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    @Transactional 
     public User createUser(String username, String email, String password) {
         if (userRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("User with username " + username + " already exists");
+            throw new DuplicateResourceException("User with username " + username + " already exists");
         }
         if (userRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("User with email " + email + " already exists");
+            throw new DuplicateResourceException("User with email " + email + " already exists");
         }
         User user = new User(username, password, email);
         return userRepository.save(user);
     }
 
+    @Transactional 
     public User updateUsername(Long id, String username) {
         User user = getUserById(id);
         if (userRepository.existsByUsernameAndIdNot(username, id)) {
-            throw new IllegalArgumentException("User with username " + username + " already exists");
+            throw new DuplicateResourceException("User with username " + username + " already exists");
         }
         user.setUsername(username);
         return userRepository.save(user);
     }
 
+    @Transactional 
     public User updateEmail(Long id, String email) {
         User user = getUserById(id);
         if (userRepository.existsByEmailAndIdNot(email, id)) {
-            throw new IllegalArgumentException("User with email " + email + " already exists");
+            throw new DuplicateResourceException("User with email " + email + " already exists");
         }
         user.setEmail(email);
         return userRepository.save(user);
     }
 
+    @Transactional 
     public User updatePassword(Long id, String password) {
         User user = getUserById(id);
         user.setPassword(password);
         return userRepository.save(user);
     }
 
+    @Transactional 
     public void deleteUser(Long id) {
         User user = getUserById(id);
         userRepository.delete(user);
