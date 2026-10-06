@@ -137,6 +137,7 @@ class ExpenseServiceTest {
         // Arrange
         //Create a new expense with old values
         Long expenseId = 1L;
+        Long userId = 1L;
         Expense expense = new Expense(
             "Burguer",
             new BigDecimal("29.99"),
@@ -149,7 +150,7 @@ class ExpenseServiceTest {
             )
         );
 
-        when(expenseRepository.findById(expenseId))
+        when(expenseRepository.findByIdAndUser_Id(expenseId, userId))
             .thenReturn(Optional.of(expense));
 
         String newDescription = "Sushi";
@@ -160,6 +161,7 @@ class ExpenseServiceTest {
         // Act
         Expense updatedExpense = expenseService.updateExpense(
             expenseId,
+            userId,
             newDescription,
             newAmount,
             newDate,
@@ -174,7 +176,7 @@ class ExpenseServiceTest {
         assertThat(updatedExpense.getUser()).isSameAs(expense.getUser());
 
         // Verify
-        verify(expenseRepository).findById(expenseId);
+        verify(expenseRepository).findByIdAndUser_Id(expenseId, userId);
     }
 
     @Test
@@ -182,6 +184,7 @@ class ExpenseServiceTest {
         // Arrange
         //Create a new expense with old values
         Long expenseId = 1L;
+        Long userId = 1L;
         BigDecimal originalAmount = new BigDecimal("89.99");
         LocalDateTime originalDate = LocalDateTime.of(2026, 9, 25, 18, 30);
         User originalUser = new User(
@@ -198,7 +201,7 @@ class ExpenseServiceTest {
             originalUser
         );
 
-        when(expenseRepository.findById(expenseId))
+        when(expenseRepository.findByIdAndUser_Id(expenseId, userId))
             .thenReturn(Optional.of(expense));
 
         String newDescription = "Sushi";
@@ -207,6 +210,7 @@ class ExpenseServiceTest {
         // Act
         Expense updatedExpense = expenseService.updateExpense(
             expenseId,
+            userId,
             newDescription,
             null,
             null,
@@ -221,13 +225,14 @@ class ExpenseServiceTest {
         assertThat(updatedExpense.getUser()).isSameAs(originalUser);
 
         // Verify
-        verify(expenseRepository).findById(expenseId);       
+        verify(expenseRepository).findByIdAndUser_Id(expenseId, userId);
     }
 
     @Test
     void updateExpense_ShouldThrowException_WhenDescriptionIsBlank() {
         // Arrange
         Long expenseId = 1L;
+        Long userId = 1L;
         Expense expense = new Expense(
             "Burguer",
             new BigDecimal("29.99"),
@@ -240,12 +245,13 @@ class ExpenseServiceTest {
             )
         );
 
-        when(expenseRepository.findById(expenseId))
+        when(expenseRepository.findByIdAndUser_Id(expenseId, userId))
             .thenReturn(Optional.of(expense));
 
         // Act & Assert
         assertThatThrownBy(() -> expenseService.updateExpense(
             expenseId,
+            userId,
             "",
             null,
             null,
@@ -255,7 +261,7 @@ class ExpenseServiceTest {
             .hasMessage("Description cannot be blank");
 
         // Verify that the expense was saved to the repository
-        verify(expenseRepository).findById(expenseId);
+        verify(expenseRepository).findByIdAndUser_Id(expenseId, userId);
         verify(expenseRepository, never()).save(any(Expense.class));
     }
 
@@ -263,6 +269,7 @@ class ExpenseServiceTest {
     void deleteExpense_ShouldDeleteExpense_WhenExpenseExists() {
         // Arrange
         Long expenseId = 1L;
+        Long userId = 1L;
         Expense expense = new Expense(
             "Burguer",
             new BigDecimal("29.99"),
@@ -275,14 +282,14 @@ class ExpenseServiceTest {
             )
         );
 
-        when(expenseRepository.findById(expenseId))
+        when(expenseRepository.findByIdAndUser_Id(expenseId, userId))
             .thenReturn(Optional.of(expense));
 
         // Act
-        expenseService.deleteExpense(expenseId);
+        expenseService.deleteExpense(expenseId, userId);
 
         // Verify that the expense was deleted from the repository
-        verify(expenseRepository).findById(expenseId);
+        verify(expenseRepository).findByIdAndUser_Id(expenseId, userId);
         verify(expenseRepository).delete(expense);
     }
 }

@@ -24,9 +24,16 @@ import org.springframework.http.MediaType;
 import com.expensetracker.entity.Category;
 import com.expensetracker.entity.Expense;
 import com.expensetracker.entity.User;
+import com.expensetracker.service.ExpenseDashboardService;
 import com.expensetracker.service.ExpenseService;
 
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 
+import org.junit.jupiter.api.AfterEach;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 public class ExpenseControllerTest {
     
@@ -35,13 +42,37 @@ public class ExpenseControllerTest {
     @Mock
     private ExpenseService expenseService;
 
+    @Mock
+    private ExpenseDashboardService expenseDashboardService;
+
     @BeforeEach 
     void setUp() {
         MockitoAnnotations.openMocks(this);
         
         mockMvc = MockMvcBuilders
-        .standaloneSetup(new ExpenseController(expenseService))
+        .standaloneSetup(new ExpenseController(expenseService, expenseDashboardService))
+        .setCustomArgumentResolvers(
+            new AuthenticationPrincipalArgumentResolver()
+        )
         .build();
+    }
+
+    private void authenticateAs(Long userId) {
+        Jwt jwt = Jwt.withTokenValue("test-token")
+            .header("alg", "HS256")
+            .subject(userId.toString())
+            .build();
+
+        Authentication authentication =
+            new JwtAuthenticationToken(jwt);
+
+        SecurityContextHolder.getContext()
+            .setAuthentication(authentication);
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -49,6 +80,8 @@ public class ExpenseControllerTest {
         // Arrange
         Long expenseId = 1L;
         Long userId = 5L;
+
+        authenticateAs(userId);
 
         User user = new User(
             "coelho",
@@ -71,7 +104,7 @@ public class ExpenseControllerTest {
         expense.setId(expenseId);
         user.setId(userId);
 
-        when(expenseService.getExpenseById(expenseId))
+        when(expenseService.getExpenseByIdAndUserId(expenseId, userId))
             .thenReturn(expense);
 
         // Act
@@ -88,7 +121,7 @@ public class ExpenseControllerTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.userEmail").value("coelho@example.com"));
 
         // Verify that the expense was retrieved from the service
-        verify(expenseService).getExpenseById(expenseId);
+        verify(expenseService).getExpenseByIdAndUserId(expenseId, userId);
     }
 
     @Test
@@ -97,6 +130,9 @@ public class ExpenseControllerTest {
         // What objects/data do I need?
         Long expenseId = 1L;
         Long userId = 5L;
+
+        authenticateAs(userId);
+
         User user = new User(
             "coelho",
             "password",
@@ -135,8 +171,7 @@ public class ExpenseControllerTest {
                             "description": "Pizza",
                             "amount": 49.99,
                             "date": "2026-09-25T20:30:00",
-                            "category": "FOOD",
-                            "userId": 5
+                            "category": "FOOD"
                         }
                         """)
         )
@@ -166,6 +201,7 @@ public class ExpenseControllerTest {
     void createExpense_ShouldReturnBadRequest_WhenDescriptionIsBlank() throws Exception {
         // Act & Assert
         // What objects/data do I need?
+        authenticateAs(5L);
         mockMvc.perform(
             post("/api/expenses")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -174,8 +210,7 @@ public class ExpenseControllerTest {
                             "description": "",
                             "amount": 49.99,
                             "date": "2026-09-25T20:30:00",
-                            "category": "FOOD",
-                            "userId": 5
+                            "category": "FOOD"
                         }
                         """)
         )
@@ -193,6 +228,9 @@ public class ExpenseControllerTest {
         // What objects/data do I need?
         Long expenseId = 1L;
         Long userId = 5L;
+
+        authenticateAs(userId);
+
         User user = new User(
             "coelho",
             "password",
@@ -215,6 +253,7 @@ public class ExpenseControllerTest {
 
         when(expenseService.updateExpense(
             expenseId,
+            userId,
             "Sushi",
             null,
             null,
@@ -245,6 +284,7 @@ public class ExpenseControllerTest {
         // What exact service method should have been called?
         verify(expenseService).updateExpense(
             expenseId,
+            userId,
             "Sushi",
             null,
             null,

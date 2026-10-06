@@ -21,9 +21,6 @@ public record CreateExpenseRequest(
     LocalDateTime date,
 
     @NotNull
-    Category category,
-
-    @NotNull
-    Long userId
+    Category category
 ) {
 }
