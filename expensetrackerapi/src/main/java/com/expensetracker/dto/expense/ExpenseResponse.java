@@ -10,9 +10,6 @@ public record ExpenseResponse(
     String description, 
     BigDecimal amount, 
     LocalDateTime date, 
-    Category category, 
-    Long userId, 
-    String userUsername, 
-    String userEmail
+    Category category
 ) {
 }

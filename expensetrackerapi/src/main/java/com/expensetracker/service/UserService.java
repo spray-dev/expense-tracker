@@ -1,7 +1,5 @@
 package com.expensetracker.service;
 
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -9,6 +7,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.expensetracker.entity.User;
 import com.expensetracker.exception.DuplicateResourceException;
 import com.expensetracker.exception.ResourceNotFoundException;
+import com.expensetracker.repository.BudgetRepository;
+import com.expensetracker.repository.ExpenseRepository;
 import com.expensetracker.repository.UserRepository;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -19,29 +19,19 @@ public class UserService {
     
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ExpenseRepository expenseRepository;
+    private final BudgetRepository budgetRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, ExpenseRepository expenseRepository, BudgetRepository budgetRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.expenseRepository = expenseRepository;
+        this.budgetRepository = budgetRepository;
     }   
 
     public User getUserById(Long id) {
         return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(
             "User with id " + id + " does not exist"));
-    }
-    
-    public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException(
-            "User with username " + username + " does not exist"));
-    }
-    
-    public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException(
-            "User with email " + email + " does not exist"));
-    }
-
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
     }
 
     @Transactional 
@@ -90,6 +80,10 @@ public class UserService {
     @Transactional 
     public void deleteUser(Long id) {
         User user = getUserById(id);
+
+        expenseRepository.deleteAllByUser_Id(user.getId());
+        budgetRepository.deleteAllByUser_Id(user.getId());
+
         userRepository.delete(user);
     }
 }

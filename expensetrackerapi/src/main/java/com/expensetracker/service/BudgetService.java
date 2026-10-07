@@ -62,24 +62,7 @@ public class BudgetService {
     public BudgetResponse getBudgetStatus(Long userId, int year, int month) {
         Budget budget = getBudgetByUserIdAndYearAndMonth(userId, year, month);
 
-        BigDecimal spent = expenseService.getMonthlyTotal(userId, year, month);
-
-        BigDecimal remaining = budget.getAmount().subtract(spent);
-
-        BigDecimal percentageSpent = spent.multiply(BigDecimal.valueOf(100)).divide(budget.getAmount(), 2, RoundingMode.HALF_UP);
-
-        boolean isOverBudget = spent.compareTo(budget.getAmount()) > 0;
-
-        return new BudgetResponse(
-            budget.getId(),
-            budget.getYear(),
-            budget.getMonth(),
-            budget.getAmount(),
-            spent,
-            remaining,
-            percentageSpent,
-            isOverBudget
-        );
+        return toBudgetResponse(budget, userId);
     }
 
     public BudgetResponse getBudgetStatusOrNull(Long userId, int year, int month) {
@@ -88,25 +71,36 @@ public class BudgetService {
             return null;
         }
 
-        Budget budget = budgetOptional.get();
+        return toBudgetResponse(budgetOptional.get(), userId);
+    }
 
-        BigDecimal spent = expenseService.getMonthlyTotal(userId, year, month);
+    private BudgetResponse toBudgetResponse(
+            Budget budget,
+            Long userId) {
+        BigDecimal spent = expenseService.getMonthlyTotal(
+                userId,
+                budget.getYear(),
+                budget.getMonth());
 
         BigDecimal remaining = budget.getAmount().subtract(spent);
 
-        BigDecimal percentageSpent = spent.multiply(BigDecimal.valueOf(100)).divide(budget.getAmount(), 2, RoundingMode.HALF_UP);
+        BigDecimal percentageSpent = spent
+                .multiply(BigDecimal.valueOf(100))
+                .divide(
+                        budget.getAmount(),
+                        2,
+                        RoundingMode.HALF_UP);
 
         boolean isOverBudget = spent.compareTo(budget.getAmount()) > 0;
 
         return new BudgetResponse(
-            budget.getId(),
-            budget.getYear(),
-            budget.getMonth(),
-            budget.getAmount(),
-            spent,
-            remaining,
-            percentageSpent,
-            isOverBudget
-        );
+                budget.getId(),
+                budget.getYear(),
+                budget.getMonth(),
+                budget.getAmount(),
+                spent,
+                remaining,
+                percentageSpent,
+                isOverBudget);
     }
 }

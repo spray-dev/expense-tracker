@@ -116,9 +116,9 @@ public class ExpenseControllerTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.amount").value(49.99))
             .andExpect(MockMvcResultMatchers.jsonPath("$.date").value("2026-09-25T20:30:00"))
             .andExpect(MockMvcResultMatchers.jsonPath("$.category").value("FOOD"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.userId").value(userId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.userUsername").value("coelho"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.userEmail").value("coelho@example.com"));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.userId").doesNotExist())
+            .andExpect(MockMvcResultMatchers.jsonPath("$.userUsername").doesNotExist())
+            .andExpect(MockMvcResultMatchers.jsonPath("$.userEmail").doesNotExist());
 
         // Verify that the expense was retrieved from the service
         verify(expenseService).getExpenseByIdAndUserId(expenseId, userId);
@@ -183,9 +183,9 @@ public class ExpenseControllerTest {
         .andExpect(MockMvcResultMatchers.jsonPath("$.amount").value(49.99))
         .andExpect(MockMvcResultMatchers.jsonPath("$.date").value("2026-09-25T20:30:00"))
         .andExpect(MockMvcResultMatchers.jsonPath("$.category").value("FOOD"))
-        .andExpect(MockMvcResultMatchers.jsonPath("$.userId").value(userId))
-        .andExpect(MockMvcResultMatchers.jsonPath("$.userUsername").value("coelho"))
-        .andExpect(MockMvcResultMatchers.jsonPath("$.userEmail").value("coelho@example.com"));
+        .andExpect(MockMvcResultMatchers.jsonPath("$.userId").doesNotExist())
+        .andExpect(MockMvcResultMatchers.jsonPath("$.userUsername").doesNotExist())
+        .andExpect(MockMvcResultMatchers.jsonPath("$.userEmail").doesNotExist());
         // Verify
         // What exact service method should have been called?
         verify(expenseService).createExpense(

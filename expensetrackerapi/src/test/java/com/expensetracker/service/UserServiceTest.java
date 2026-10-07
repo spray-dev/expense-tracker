@@ -14,6 +14,8 @@ import org.mockito.MockitoAnnotations;
 
 import com.expensetracker.entity.User;
 import com.expensetracker.repository.UserRepository;
+import com.expensetracker.repository.ExpenseRepository;
+import com.expensetracker.repository.BudgetRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class UserServiceTest {
@@ -26,13 +28,21 @@ public class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private ExpenseRepository expenseRepository;
+
+    @Mock
+    private BudgetRepository budgetRepository;
+
     @BeforeEach 
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
         userService = new UserService(
             userRepository, 
-            passwordEncoder
+            passwordEncoder,
+            expenseRepository,
+            budgetRepository
         );
     }
 

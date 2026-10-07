@@ -90,9 +90,10 @@ class ExpenseServiceTest {
     }
 
     @Test
-    void getExpenseById_ShouldReturnExpense_WhenExpenseExists() {
+    void getExpenseByIdAndUserId_ShouldReturnExpense_WhenExpenseBelongsToUser() {
         // Arrange
         Long expenseId = 1L;
+        Long userId = 5L;
         Expense expense = new Expense(
             "Pizza",
             new BigDecimal("49.99"),
@@ -105,31 +106,32 @@ class ExpenseServiceTest {
             )
         );
         
-        when(expenseRepository.findById(expenseId))
+        when(expenseRepository.findByIdAndUser_Id(expenseId, userId))
             .thenReturn(Optional.of(expense));
         // Act
-        Expense foundExpense = expenseService.getExpenseById(expenseId);
+        Expense foundExpense = expenseService.getExpenseByIdAndUserId(expenseId, userId);
         // Assert
         assertThat(foundExpense).isSameAs(expense);
 
         // Verify that the expense was retrieved from the repository
-        verify(expenseRepository).findById(expenseId);       
+        verify(expenseRepository).findByIdAndUser_Id(expenseId, userId);
     }
 
     @Test
-    void getExpenseById_ShouldThrowException_WhenExpenseDoesNotExist() {
+    void getExpenseByIdAndUserId_ShouldThrowException_WhenExpenseDoesNotExistForUser() {
         // Arrange
         Long expenseId = 1L;
-        when(expenseRepository.findById(expenseId))
+        Long userId = 5L;
+        when(expenseRepository.findByIdAndUser_Id(expenseId, userId))
             .thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> expenseService.getExpenseById(expenseId))
+        assertThatThrownBy(() -> expenseService.getExpenseByIdAndUserId(expenseId, userId))
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessage("Expense with id " + expenseId + " does not exist");
 
         // Verify that the expense was retrieved from the repository
-        verify(expenseRepository).findById(expenseId);
+        verify(expenseRepository).findByIdAndUser_Id(expenseId, userId);
     }
 
     @Test

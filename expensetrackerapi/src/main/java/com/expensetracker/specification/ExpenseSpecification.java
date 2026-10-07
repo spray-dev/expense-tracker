@@ -33,6 +33,14 @@ public class ExpenseSpecification {
             );
     }
 
+    // Exclusive next-midnight bounds avoid database timestamp rounding into the next day.
+    public static Specification<Expense> hasDateInHalfOpenRange(LocalDateTime startDate, LocalDateTime endDate) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.and(
+            criteriaBuilder.greaterThanOrEqualTo(root.get("date"), startDate),
+            criteriaBuilder.lessThan(root.get("date"), endDate)
+        );
+    }
+
     public static Specification<Expense> hasDescriptionContainingIgnoreCase(String description) {
         return (root, query, criteriaBuilder) ->
             criteriaBuilder.like(

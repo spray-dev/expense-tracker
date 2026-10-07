@@ -64,10 +64,7 @@ public class ExpenseController {
             expense.getDescription(), 
             expense.getAmount(), 
             expense.getDate(), 
-            expense.getCategory(),
-            expense.getUser().getId(), 
-            expense.getUser().getUsername(), 
-            expense.getUser().getEmail()
+            expense.getCategory()
         );
     }
 
@@ -103,8 +100,8 @@ public class ExpenseController {
             throw new InvalidResourceException("Page must be 0 or greater");
         }
 
-        if (size < 1) {
-            throw new InvalidResourceException("Size must be at least 1");
+        if (size < 1 || size > 100) {
+            throw new InvalidResourceException("Size must be between 1 and 100");
         }
 
         Page<Expense> expensePage = expenseService.filterExpenses(

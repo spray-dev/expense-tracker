@@ -79,9 +79,9 @@ public class ExpenseService {
     public List<Expense> getExpensesByMonth(Long userId, int year, int month) {
         YearMonth yearMonth = YearMonth.of(year, month);
         LocalDateTime startOfMonth = LocalDateTime.of(yearMonth.atDay(1), LocalTime.MIN);
-        LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusNanos(1);
+        LocalDateTime nextMonth = startOfMonth.plusMonths(1);
         
-        return expenseRepository.findAllByUser_IdAndDateBetween(userId, startOfMonth, endOfMonth);
+        return expenseRepository.findAllByUser_IdAndDateGreaterThanEqualAndDateLessThan(userId, startOfMonth, nextMonth);
     }
 
     //Features
@@ -176,11 +176,7 @@ public class ExpenseService {
         if (category != null) {
             spec = spec.and(ExpenseSpecification.hasCategory(category));
         }
-
-        if (startDate != null && endDate != null) {
-            spec = spec.and(ExpenseSpecification.hasDateBetween(startDate, endDate));
-        }
-
+        
         if (description != null && !description.isBlank()) {
             spec = spec.and(ExpenseSpecification.hasDescriptionContainingIgnoreCase(description));
         }
@@ -220,7 +216,7 @@ public class ExpenseService {
         if (period != null) {
             DateRange range = getDateRangeForPeriod(period);
             spec = spec.and(
-                ExpenseSpecification.hasDateBetween(range.startDate(), range.endDate())
+                ExpenseSpecification.hasDateInHalfOpenRange(range.startDate(), range.endDate().plusNanos(1))
             ); 
         } else if (startDate != null && endDate != null) {
             spec = spec.and(
@@ -308,7 +304,7 @@ public class ExpenseService {
         return new DateRange(startDate, endDate);
     }
 
-    //12. CSV Export
+    // 12. CSV Export
     public String exportExpensesToCsv(List<Expense> expenses) {
         StringBuilder csv = new StringBuilder();
 
@@ -353,5 +349,4 @@ public class ExpenseService {
         Expense expense = getExpenseByIdAndUserId(id, userId);
         expenseRepository.delete(expense);
     }
-
 }
