@@ -57,7 +57,8 @@ export function AppLayout() {
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [month, setMonth] = useState("2026-10");
+  const [month, setMonth] = useState(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`; });
+  const [calendarBase] = useState(() => new Date());
   const location = useLocation();
   const title =
     nav.find((n) => n.path === location.pathname)?.title ?? "Controle de Despesas";
@@ -134,9 +135,12 @@ export function AppLayout() {
             <label className="month-select">
               <span className="sr-only">Mês selecionado</span>
               <select value={month} onChange={(e) => setMonth(e.target.value)}>
-                <option value="2026-10">Outubro de 2026</option>
-                <option value="2026-09">Setembro de 2026</option>
-                <option value="2026-08">Agosto de 2026</option>
+                {Array.from({ length: 24 }, (_, offset) => {
+                  const now = calendarBase;
+                  const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+                  const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+                  return <option key={value} value={value}>{new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(date)}</option>;
+                })}
               </select>
               <ChevronDown size={14} />
             </label>
@@ -152,7 +156,7 @@ export function AppLayout() {
           <footer className="page-footer">
             <span>Controle de Despesas</span>
             <span>
-              <i /> Dados financeiros de demonstração
+              <i /> {location.pathname === "/dashboard" ? "Dados da sua conta" : "Dados financeiros de demonstração"}
             </span>
           </footer>
         </main>

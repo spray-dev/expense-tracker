@@ -126,6 +126,37 @@ class ExpenseQueryTest {
         assertThat(service().getMonthlyTotal(alice.getId(), 2024, 4)).isEqualByComparingTo("0");
     }
 
+    @ParameterizedTest
+    @CsvSource({"2024,2", "2024,12"})
+    void dashboardRanksOnlySelectedMonthAndOwnerWithFiveItemLimit(int year, int month) {
+        User alice = user("alice");
+        User bob = user("bob");
+        LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0);
+        LocalDateTime next = start.plusMonths(1);
+        var own = new java.util.ArrayList<Expense>();
+        for (int i = 0; i < 6; i++) {
+            own.add(expense(alice, "Selected " + i, Integer.toString(60 - i),
+                i == 5 ? next.minusNanos(1000) : start.plusDays(i), Category.FOOD));
+        }
+        expense(alice, "Before", "9999", start.minusSeconds(1), Category.FOOD);
+        Expense following = expense(alice, "Next month", "9999", next, Category.FOOD);
+        expense(alice, "Other year", "9999", start.minusYears(1), Category.FOOD);
+        expense(bob, "Private", "99999", next.minusNanos(1000), Category.FOOD);
+        ExpenseDashboardService dashboard = new ExpenseDashboardService(service(), mock(BudgetService.class));
+
+        var selected = dashboard.getDashboard(alice.getId(), year, month);
+        assertThat(selected.recentExpenses()).extracting(e -> e.id()).containsExactly(
+            own.get(5).getId(), own.get(4).getId(), own.get(3).getId(), own.get(2).getId(), own.get(1).getId());
+        assertThat(selected.largestExpenses()).extracting(e -> e.id()).containsExactly(
+            own.get(0).getId(), own.get(1).getId(), own.get(2).getId(), own.get(3).getId(), own.get(4).getId());
+        var followingMonth = dashboard.getDashboard(alice.getId(), next.getYear(), next.getMonthValue());
+        assertThat(followingMonth.recentExpenses()).extracting(e -> e.id()).containsExactly(following.getId());
+        assertThat(followingMonth.largestExpenses()).extracting(e -> e.id()).containsExactly(following.getId());
+        var empty = dashboard.getDashboard(alice.getId(), next.plusMonths(1).getYear(), next.plusMonths(1).getMonthValue());
+        assertThat(empty.recentExpenses()).isEmpty();
+        assertThat(empty.largestExpenses()).isEmpty();
+    }
+
     @Test
     void anotherUsersExpenseCannotBeReadUpdatedOrDeleted() {
         User alice = user("alice");

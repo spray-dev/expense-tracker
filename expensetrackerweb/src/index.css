@@ -11,18 +11,18 @@
   --card-foreground: #292833;
   --popover: #ffffff;
   --popover-foreground: #292833;
-  --primary: #7252d6;
+  --primary: #916000;
   --primary-foreground: #ffffff;
-  --secondary: #efedf6;
-  --secondary-foreground: #544378;
+  --secondary: #f5eddb;
+  --secondary-foreground: #70531b;
   --muted: #f1f0ed;
-  --muted-foreground: #77747f;
-  --accent: #eeebf8;
-  --accent-foreground: #694ac8;
+  --muted-foreground: #706b60;
+  --accent: #fff0cc;
+  --accent-foreground: #805400;
   --destructive: #c24649;
   --border: #e6e4e9;
   --input: #dedce4;
-  --ring: #9478e5;
+  --ring: #916000;
   --radius: 0.3rem;
 }
 .dark {
@@ -33,18 +33,18 @@
   --card-foreground: #eeedf5;
   --popover: #25252e;
   --popover-foreground: #eeedf5;
-  --primary: #a58aef;
-  --primary-foreground: #191324;
-  --secondary: #302a40;
-  --secondary-foreground: #d3c6f5;
+  --primary: #e5b64f;
+  --primary-foreground: #241b09;
+  --secondary: #3b3020;
+  --secondary-foreground: #eed59b;
   --muted: #2b2a32;
   --muted-foreground: #a6a2b2;
-  --accent: #332a49;
-  --accent-foreground: #c3adff;
+  --accent: #3b301b;
+  --accent-foreground: #f2cd78;
   --destructive: #ef8181;
   --border: #35333f;
   --input: #423e4d;
-  --ring: #a58aef;
+  --ring: #e5b64f;
 }
 @theme inline {
   --color-background: var(--background);
@@ -402,13 +402,13 @@ h3 {
   z-index: 1;
 }
 .featured {
-  background: #7557ce;
-  color: white;
-  border-color: #7557ce;
+  background: #e4b448;
+  color: #302309;
+  border-color: #e4b448;
 }
 .featured .stat-label,
 .featured .stat-label svg {
-  color: #e5dbff;
+  color: #42300b;
 }
 .stat-pill {
   padding: 4px 7px;
@@ -856,16 +856,16 @@ progress::-moz-progress-bar {
   min-height: 100vh;
 }
 .auth-story {
-  background: #ece8f6;
-  color: #322845;
+  background: #f4ead0;
+  color: #423317;
   padding: 42px 55px 25px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 .dark .auth-story {
-  background: #282135;
-  color: #eae0fa;
+  background: #302819;
+  color: #f3e7ca;
 }
 .auth-story-content {
   max-width: 480px;
@@ -891,14 +891,14 @@ progress::-moz-progress-bar {
 .art-orbit {
   width: 275px;
   height: 275px;
-  border: 1px solid #9d82d659;
+  border: 1px solid #b58a3859;
   border-radius: 50%;
   position: absolute;
   left: 80px;
   top: 5px;
   box-shadow:
-    0 0 0 28px #a083d60a,
-    0 0 0 56px #a083d606;
+    0 0 0 28px #b58a380a,
+    0 0 0 56px #b58a3806;
 }
 .art-card {
   position: relative;
@@ -910,7 +910,7 @@ progress::-moz-progress-bar {
   height: 255px;
   transform: rotate(-5deg);
   color: var(--foreground);
-  box-shadow: 0 15px 35px #3d285815;
+  box-shadow: 0 15px 35px #58432815;
   margin-left: 35px;
 }
 .art-card > span {
@@ -932,11 +932,11 @@ progress::-moz-progress-bar {
 }
 .art-bars i {
   flex: 1;
-  background: #aa94e2;
+  background: #c79a3d;
   border-radius: 2px 2px 0 0;
 }
 .art-bars i:nth-child(2n) {
-  background: #cbbdec;
+  background: #e8ce92;
 }
 .art-card-footer {
   font-size: 9px;
@@ -1371,3 +1371,13 @@ progress::-moz-progress-bar {
 .skip-link:focus {
   top: 12px;
 }
+
+.category-ranking { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.category-ranking strong { margin-left: auto; white-space: nowrap; }
+.rank-number { display: grid; place-items: center; width: 28px; height: 28px; background: var(--accent); color: var(--accent-foreground); border-radius: 4px; }
+.dashboard-list { margin-top: 30px; }
+.dashboard-empty { margin-bottom: 28px; min-height: 150px; }
+.over-budget::-webkit-progress-value { background: var(--destructive); }
+.over-budget::-moz-progress-bar { background: var(--destructive); }
+.dark .featured { background: #bd8c2e; border-color: #bd8c2e; }
+.featured .stat-pill { background: #30230912; }

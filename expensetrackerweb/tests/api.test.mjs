@@ -33,3 +33,37 @@ await test('late 401 from previous session does not clear a newer login', async 
   setToken('current-token'); reject(); await assert.rejects(request);
   assert.equal(getToken(), 'current-token'); assert.equal(ended, 1);
 });
+
+const apiModuleURL = 'data:text/javascript;base64,' + Buffer.from(js).toString('base64');
+const dashboardSource = (await readFile(new URL('../src/lib/dashboard.ts', import.meta.url), 'utf8')).replace('"./api"', JSON.stringify(apiModuleURL));
+const dashboardJS = ts.transpileModule(dashboardSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+const { getDashboard, presentExpense, categoryLabel } = await import('data:text/javascript;base64,' + Buffer.from(dashboardJS).toString('base64'));
+await test('dashboard sends selected year/month with the current JWT and preserves server data', async () => {
+  const payload = { monthlyTotal: 825, averageSpending: 275, expenseCount: 3, budget: null, recentExpenses: [], largestExpenses: [] };
+  api.defaults.adapter = async config => {
+    assert.equal(config.url, '/api/expenses/dashboard');
+    assert.deepEqual(config.params, { year: 2025, month: 12 });
+    assert.equal(config.headers.Authorization, 'Bearer current-token');
+    return { data: payload, status: 200, statusText: 'OK', headers: {}, config };
+  };
+  assert.deepEqual(await getDashboard('2025-12'), payload);
+});
+await test('dashboard aborts canceled month requests and propagates failures for retry', async () => {
+  const controller = new AbortController(); controller.abort();
+  await assert.rejects(getDashboard('2026-10', controller.signal), error => error.code === 'ERR_CANCELED');
+  api.defaults.adapter = async () => { throw new Error('offline'); };
+  await assert.rejects(getDashboard('2026-10'), /offline/);
+});
+await test('backend category labels preserve unrecognized categories and timestamps', () => {
+  assert.equal(categoryLabel('FOOD'), 'Alimentação');
+  assert.equal(categoryLabel('FUTURE'), 'FUTURE');
+  const expense = presentExpense({ id: 1, description: 'Compra', category: 'HOME', amount: 25, date: '2026-10-07T15:30:00' });
+  assert.equal(expense.category, 'Moradia'); assert.equal(expense.date, '2026-10-07T15:30:00');
+});
+const formatSource = await readFile(new URL('../src/lib/format.ts', import.meta.url), 'utf8');
+const formatJS = ts.transpileModule(formatSource, { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText;
+const { dateLabel } = await import('data:text/javascript;base64,' + Buffer.from(formatJS).toString('base64'));
+await test('Brazilian dates accept backend timestamps and demo date-only values', () => {
+  assert.equal(dateLabel('2026-10-07T23:30:00'), dateLabel('2026-10-07'));
+  assert.match(dateLabel('2026-10-07T23:30:00'), /7/);
+});

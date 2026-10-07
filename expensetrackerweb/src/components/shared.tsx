@@ -75,18 +75,18 @@ export function ExpenseCard({
   expense,
   onEdit,
 }: {
-  expense: DemoExpense;
+  expense: Omit<DemoExpense, "category"> & { category: string };
   onEdit?: () => void;
 }) {
-  const Icon = categoryIcons[expense.category];
+  const Icon = categoryIcons[expense.category as keyof typeof categoryIcons] ?? WalletCards;
   return (
     <article className="expense-card">
       <div className="expense-card-top">
         <span
           className="category-icon"
           style={{
-            color: categoryColors[expense.category],
-            background: `${categoryColors[expense.category]}18`,
+            color: (categoryColors[expense.category as keyof typeof categoryColors] ?? "#8a7550"),
+            background: `${(categoryColors[expense.category as keyof typeof categoryColors] ?? "#8a7550")}18`,
           }}
         >
           <Icon size={22} />
@@ -97,7 +97,7 @@ export function ExpenseCard({
       <p className="small muted">{expense.note}</p>
       <div className="expense-card-bottom">
         <strong>{money(expense.amount)}</strong>
-        <span className="tag" style={{ background: `${categoryColors[expense.category]}20`, borderLeft: `3px solid ${categoryColors[expense.category]}` }}>{expense.category}</span>
+        <span className="tag" style={{ background: `${(categoryColors[expense.category as keyof typeof categoryColors] ?? "#8a7550")}20`, borderLeft: `3px solid ${(categoryColors[expense.category as keyof typeof categoryColors] ?? "#8a7550")}` }}>{expense.category}</span>
       </div>
       {onEdit && (
         <Button

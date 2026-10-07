@@ -243,6 +243,22 @@ public class ExpenseService {
         return expenseRepository.findAll(spec, pageable).getContent();
     }
 
+    public List<Expense> getRecentExpenses(Long userId, int year, int month, int limit) {
+        return getRankedExpensesByMonth(userId, year, month, limit, "date");
+    }
+
+    public List<Expense> getLargestExpenses(Long userId, int year, int month, int limit) {
+        return getRankedExpensesByMonth(userId, year, month, limit, "amount");
+    }
+
+    private List<Expense> getRankedExpensesByMonth(Long userId, int year, int month, int limit, String sortField) {
+        LocalDateTime start = YearMonth.of(year, month).atDay(1).atStartOfDay();
+        Specification<Expense> spec = ExpenseSpecification.hasUserId(userId)
+            .and(ExpenseSpecification.hasDateInHalfOpenRange(start, start.plusMonths(1)));
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(sortField).descending());
+        return expenseRepository.findAll(spec, pageable).getContent();
+    }
+
     //10. Yearly Summary
     public ExpenseYearlySummaryResponse getYearlySummary(Long userId, int year) {
         List<ExpenseMonthlyTotalResponse> monthlyTotals = new ArrayList<>();

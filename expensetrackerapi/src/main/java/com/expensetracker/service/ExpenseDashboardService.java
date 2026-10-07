@@ -34,8 +34,8 @@ public class ExpenseDashboardService {
         int expenseCount = expenseService.getCountOfExpenses(userId, year, month);
         Map<Category, BigDecimal> categoryTotals = expenseService.getMonthlyTotalsByCategory(userId, year, month);
         List<CategorySpendingSummary> topSpendingCategories = expenseService.getTopSpendingCategories(userId, year, month);
-        List<Expense> recentExpenses = expenseService.getRecentExpenses(userId, 5);
-        List<Expense> largestExpenses = expenseService.getLargestExpenses(userId, 5);
+        List<Expense> recentExpenses = expenseService.getRecentExpenses(userId, year, month, 5);
+        List<Expense> largestExpenses = expenseService.getLargestExpenses(userId, year, month, 5);
         BudgetResponse budget = budgetService.getBudgetStatusOrNull(userId, year, month);
 
         return new ExpenseDashboardResponse(

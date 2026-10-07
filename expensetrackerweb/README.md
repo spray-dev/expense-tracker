@@ -41,3 +41,9 @@ npm run test:auth
 ```
 
 Os testes cobrem armazenamento/restauração do token, envio Bearer em requisições protegidas, 401 público versus protegido e proteção contra respostas atrasadas de uma sessão anterior. Usam Node e TypeScript já presentes no projeto, sem novas dependências.
+
+## Painel conectado
+
+O painel usa `GET /api/expenses/dashboard?year=YYYY&month=M` com o JWT do cliente Axios existente. A seleção de mês recarrega os dados e cancela solicitações anteriores. Totais, média, contagem, categorias e orçamento vêm da resposta; orçamento nulo tem estado próprio. Despesas recentes e maiores também seguem o mês selecionado, com até cinco despesas de cada lista e somente dados do usuário autenticado. O painel não apresenta tendência fictícia. Outras páginas mantêm dados de demonstração.
+
+A paleta usa ouro quente no cartão principal, âmbar escuro em ações no tema claro e âmbar suave no tema escuro. Os testes também verificam parâmetros do painel, autenticação, cancelamento, falhas, categorias e datas do backend.

@@ -13,7 +13,7 @@ import {
 import {
   categoryColors,
   type DemoExpense,
-  type Category,
+
   demoTrend,
 } from "@/data/demo";
 import { money } from "@/lib/format";
@@ -31,8 +31,8 @@ export function TrendChart() {
         >
           <defs>
             <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8b6cef" stopOpacity={0.25} />
-              <stop offset="100%" stopColor="#8b6cef" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.25} />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -66,7 +66,7 @@ export function TrendChart() {
           <Area
             type="monotone"
             dataKey="spending"
-            stroke="#8b6cef"
+            stroke="var(--primary)"
             strokeWidth={3}
             fill="url(#spendingGradient)"
           />
@@ -75,19 +75,16 @@ export function TrendChart() {
     </div>
   );
 }
-export function CategoryChart({ expenses }: { expenses: DemoExpense[] }) {
-  const data = Object.entries(categoryColors)
-    .map(([category, color]) => ({
-      category: category as Category,
-      color,
-      value: expenses
-        .filter((e) => e.category === category)
-        .reduce((sum, e) => sum + e.amount, 0),
-    }))
-    .filter((c) => c.value > 0);
-  if (!data.length)
+export function CategoryChart({ expenses = [], totals }: { expenses?: DemoExpense[]; totals?: Record<string, number> }) {
+  const values = totals ?? expenses.reduce<Record<string, number>>((sum, expense) => {
+    sum[expense.category] = (sum[expense.category] ?? 0) + expense.amount;
+    return sum;
+  }, {});
+  const data = Object.entries(values).map(([category, value]) => ({
+    category, value, color: categoryColors[category as keyof typeof categoryColors] ?? "#8a7550",
+  })).filter(item => item.value > 0);  if (!data.length)
     return (
-      <p className="empty-state muted">Nenhum dado de categoria de demonstração neste mês.</p>
+      <p className="empty-state muted">Nenhum gasto por categoria neste mês.</p>
     );
   return (
     <div className="category-chart">
