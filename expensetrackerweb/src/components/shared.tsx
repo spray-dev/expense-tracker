@@ -8,6 +8,7 @@ import {
   Moon,
   Sun,
   WalletCards,
+  Wallet,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,16 +24,11 @@ const categoryIcons = {
 };
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
-    <Link to="/dashboard" className="brand" aria-label="Início do Controle de Despesas">
+    <Link to="/dashboard" className="brand" aria-label="Início do Expense Tracker">
       <span className="brand-icon">
-        <WalletCards size={22} />
+        <Wallet size={22} aria-hidden="true" />
       </span>
-      {!compact && (
-        <span>
-          controle<span className="brand-light"> de despesas</span>
-          <small>Um pouco de clareza todos os dias.</small>
-        </span>
-      )}
+      {!compact && <span>Expense Tracker</span>}
     </Link>
   );
 }

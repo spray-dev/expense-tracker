@@ -181,16 +181,6 @@ h3 {
   border-radius: 5px;
   flex-shrink: 0;
 }
-.brand-light {
-  font-weight: 400;
-}
-.brand small {
-  display: block;
-  color: var(--muted-foreground);
-  font-size: 9px;
-  font-weight: 400;
-  margin-top: 5px;
-}
 .sidebar-nav {
   margin-top: 55px;
 }

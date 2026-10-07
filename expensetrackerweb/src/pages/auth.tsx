@@ -12,7 +12,7 @@ export default function Auth({ register = false }: { register?: boolean }) {
   const location = useLocation();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => { document.title = `${register ? "Criar conta" : "Entrar"} · Controle de Despesas`; }, [register]);
+  useEffect(() => { document.title = `${register ? "Criar conta" : "Entrar"} · Expense Tracker`; }, [register]);
   const from = location.state?.from;
   const destination = typeof from === "string" && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/login") && !from.startsWith("/register") ? from : "/dashboard";
   if (loading) return <div className="empty-state" role="status">Verificando sua sessão…</div>;
@@ -78,7 +78,7 @@ export default function Auth({ register = false }: { register?: boolean }) {
             </span>
           </div>
         </div>
-        <p className="small">Controle de Despesas · Um pouco de clareza todos os dias.</p>
+        <p className="small">Expense Tracker</p>
       </aside>
       <main className="auth-main">
         <div className="auth-top">

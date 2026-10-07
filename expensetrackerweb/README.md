@@ -1,4 +1,4 @@
-# Controle de Despesas
+# Expense Tracker
 
 Frontend React, TypeScript e Vite com autenticação JWT e integração v1 completa: painel, despesas, orçamento, análises e perfil conectados à API Spring Boot. Sem dados financeiros de demonstração.
 

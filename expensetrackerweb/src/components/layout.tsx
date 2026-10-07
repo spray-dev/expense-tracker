@@ -61,9 +61,9 @@ export function AppLayout() {
   const [calendarBase] = useState(() => new Date());
   const location = useLocation();
   const title =
-    nav.find((n) => n.path === location.pathname)?.title ?? "Controle de Despesas";
+    nav.find((n) => n.path === location.pathname)?.title ?? "Expense Tracker";
   useEffect(() => {
-    document.title = `${title} · Controle de Despesas`;
+    document.title = `${title} · Expense Tracker`;
   }, [title]);
   return (
     <div className={`app-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
@@ -154,7 +154,7 @@ export function AppLayout() {
         <main id="main-content" tabIndex={-1} className="main-content">
           <Outlet key={month} context={{ month } satisfies MonthContext} />
           <footer className="page-footer">
-            <span>Controle de Despesas</span>
+            <span>Expense Tracker</span>
             <span>
               <i /> Dados da sua conta
             </span>
