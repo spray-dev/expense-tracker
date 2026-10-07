@@ -10,23 +10,18 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import {
-  categoryColors,
-  type DemoExpense,
-
-  demoTrend,
-} from "@/data/demo";
+import { categoryColors } from "@/data/categories";
 import { money } from "@/lib/format";
-export function TrendChart() {
+export function TrendChart({ data }: { data: { month: string; spending: number }[] }) {
   return (
     <div
       className="chart"
       role="img"
-      aria-label="Gastos mensais ilustrativos: maio 2.650, junho 3.100, julho 2.870, agosto 3.320, setembro 3.050, outubro 2.893,80 reais"
+      aria-label={data.map(item => `${item.month}: ${money(item.spending)}`).join(", ")}
     >
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
-          data={demoTrend}
+          data={data}
           margin={{ top: 15, right: 12, left: 0, bottom: 0 }}
         >
           <defs>
@@ -75,12 +70,8 @@ export function TrendChart() {
     </div>
   );
 }
-export function CategoryChart({ expenses = [], totals }: { expenses?: DemoExpense[]; totals?: Record<string, number> }) {
-  const values = totals ?? expenses.reduce<Record<string, number>>((sum, expense) => {
-    sum[expense.category] = (sum[expense.category] ?? 0) + expense.amount;
-    return sum;
-  }, {});
-  const data = Object.entries(values).map(([category, value]) => ({
+export function CategoryChart({ totals }: { totals: Record<string, number> }) {
+  const data = Object.entries(totals).map(([category, value]) => ({
     category, value, color: categoryColors[category as keyof typeof categoryColors] ?? "#8a7550",
   })).filter(item => item.value > 0);  if (!data.length)
     return (

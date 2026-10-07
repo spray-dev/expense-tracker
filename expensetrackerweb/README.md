@@ -1,6 +1,6 @@
 # Controle de Despesas
 
-Frontend React, TypeScript e Vite com autenticação real. Painel, despesas, orçamento e análises continuam usando dados de demonstração. O perfil exibe apenas nome de usuário e e-mail retornados por `/api/users/me`; edição, CSV e operações financeiras ainda estão indisponíveis.
+Frontend React, TypeScript e Vite com autenticação JWT e integração v1 completa: painel, despesas, orçamento, análises e perfil conectados à API Spring Boot. Sem dados financeiros de demonstração.
 
 ## Executar
 
@@ -30,7 +30,7 @@ Reinicie o Vite após alterar variáveis. A mesma variável deve ser definida an
 
 ## Interface
 
-Toda a interface está em pt-BR, incluindo validação dos campos, estados, acessibilidade, diálogos e dados de demonstração. Valores usam BRL e datas/números usam convenções brasileiras. A identidade visual, temas e disposição foram preservados. As cores discretas das categorias agora também aparecem nos chips dos cartões; textos e ícones continuam identificando cada categoria.
+Toda a interface está em pt-BR, incluindo validação dos campos, estados, acessibilidade, diálogos e feedback das operações. Valores usam BRL e datas/números usam convenções brasileiras. A identidade visual, temas e disposição foram preservados. As cores discretas das categorias agora também aparecem nos chips dos cartões; textos e ícones continuam identificando cada categoria.
 
 ## Verificação
 
@@ -44,6 +44,17 @@ Os testes cobrem armazenamento/restauração do token, envio Bearer em requisiç
 
 ## Painel conectado
 
-O painel usa `GET /api/expenses/dashboard?year=YYYY&month=M` com o JWT do cliente Axios existente. A seleção de mês recarrega os dados e cancela solicitações anteriores. Totais, média, contagem, categorias e orçamento vêm da resposta; orçamento nulo tem estado próprio. Despesas recentes e maiores também seguem o mês selecionado, com até cinco despesas de cada lista e somente dados do usuário autenticado. O painel não apresenta tendência fictícia. Outras páginas mantêm dados de demonstração.
+O painel usa `GET /api/expenses/dashboard?year=YYYY&month=M` com o JWT do cliente Axios existente. A seleção de mês recarrega os dados e cancela solicitações anteriores. Totais, média, contagem, categorias e orçamento vêm da resposta; orçamento nulo tem estado próprio. Despesas recentes e maiores também seguem o mês selecionado, com até cinco despesas de cada lista e somente dados do usuário autenticado. O painel não apresenta tendência fictícia. Todas as páginas financeiras usam exclusivamente dados da conta autenticada.
 
 A paleta usa ouro quente no cartão principal, âmbar escuro em ações no tema claro e âmbar suave no tema escuro. Os testes também verificam parâmetros do painel, autenticação, cancelamento, falhas, categorias e datas do backend.
+
+
+## Integração v1
+
+- Despesas: lista paginada autenticada, busca, categorias do backend, mês selecionado, períodos relativos ao relógio do servidor ou intervalo de datas inclusivo, ordenação, criação/edição com data e hora, exclusão confirmada. O CSV exporta **todas** as despesas da conta, conforme o endpoint existente; não apenas os filtros atuais.
+- Orçamento: consulta e criação/atualização do limite no mês selecionado; ausência (404) e excesso tratados separadamente de erros de conexão.
+- Análises: tendência de seis meses até o mês selecionado, categorias/maiores categorias mensais e resumo anual, pelos endpoints existentes.
+- Perfil: `/me`, atualização separada de nome/e-mail/senha, confirmação de senha, logout e exclusão permanente confirmada com limpeza da sessão após sucesso.
+- Carregamento, estados vazios, erros com tentativa novamente, validação e feedback em pt-BR; BRL, paleta âmbar e cores das categorias preservados. Nenhum dado financeiro fictício.
+
+`npm run test:auth` executa testes focados do cliente de autenticação e dos contratos de integração (filtros/datas/paginação, CRUD/CSV, orçamento ausente, análises, perfil e cancelamento). `npm run build` e `npm run lint` verificam o frontend completo.

@@ -1,224 +1,92 @@
-import { useState } from "react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
-import {
-  Plus,
-  Search,
-  SlidersHorizontal,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-} from "lucide-react";
+import { Plus, Search, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { PageIntro, ExpenseCard, EmptyState } from "@/components/shared";
-import { categories, demoExpenses, type DemoExpense } from "@/data/demo";
-import { money } from "@/lib/format";
+import { ResourceState } from "@/components/resource-state";
+import { categoryLabels } from "@/data/categories";
+import { presentExpense } from "@/lib/dashboard";
+import { listExpensePage, saveExpense, deleteExpense, exportExpenses, requestError, type Expense, type Filters } from "@/lib/finance";
+import { useResource } from "@/lib/use-resource";
 import type { MonthContext } from "@/components/layout";
+
 export default function Expenses() {
   const { month } = useOutletContext<MonthContext>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("Todas");
-  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<Omit<Filters, "month">>({ description: "", category: "", period: "SELECTED_MONTH", start: "", end: "", sort: "date:desc", page: 0 });
   const [open, setOpen] = useState(searchParams.get("new") === "1");
-  const [selected, setSelected] = useState<DemoExpense | null>(null);
-  const filtered = demoExpenses.filter(
-    (e) =>
-      e.date.startsWith(month) &&
-      (category === "Todas" || e.category === category) &&
-      e.description.toLowerCase().includes(search.toLowerCase()),
-  );
-  const pages = Math.max(1, Math.ceil(filtered.length / 6));
-  const currentPage = Math.min(page, pages);
-  function show(expense: DemoExpense | null) {
-    setSelected(expense);
-    setOpen(true);
+  const [selected, setSelected] = useState<Expense>();
+  const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const lock = useRef(false);
+  const queryKey = JSON.stringify({ ...filters, month });
+  const load = useCallback((signal: AbortSignal) => listExpensePage(JSON.parse(queryKey) as Filters, signal), [queryKey]);
+  const resource = useResource(queryKey, load);
+  function change(patch: Partial<Filters>) { setFilters(current => ({ ...current, ...patch, page: 0 })); }
+  function show(expense?: Expense) { setSelected(expense); setFormError(""); setConfirmDelete(false); setOpen(true); }
+  function close() { setOpen(false); setSearchParams({}, { replace: true }); }
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (lock.current) return;
+    const fields = new FormData(event.currentTarget);
+    const description = String(fields.get("description")).trim();
+    if (!description) { setFormError("Informe uma descrição."); return; }
+    lock.current = true; setBusy(true); setFormError("");
+    try {
+      await saveExpense({ description, amount: Number(fields.get("amount")), date: String(fields.get("date")), category: String(fields.get("category")) }, selected?.id);
+      close(); setNotice(selected ? "Despesa atualizada." : "Despesa adicionada. Se não aparecer, confira o mês e os filtros selecionados."); resource.refresh();
+    } catch (error) { setFormError(requestError(error)); }
+    finally { lock.current = false; setBusy(false); }
   }
-  return (
-    <>
-      <PageIntro
-        eyebrow="SEUS GASTOS DO DIA A DIA"
-        title="Pequenos gastos. Visão completa."
-        description="Encontre e acompanhe as despesas do seu mês."
-        action={
-          <Button onClick={() => show(null)}>
-            <Plus size={17} /> Adicionar despesa
-          </Button>
-        }
-      />
-      <div className="filters-panel">
-        <div className="search-row">
-          <div className="search-input">
-            <Search size={18} />
-            <Input
-              aria-label="Buscar despesas"
-              placeholder="Buscar despesas…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-            />
-          </div>
-          <Button
-            variant="outline"
-            disabled
-            title="A exportação CSV estará disponível em uma próxima etapa"
-          >
-            <Download size={16} /> Exportar CSV
-          </Button>
-        </div>
-        <div className="filter-row">
-          <span className="small filter-label">
-            <SlidersHorizontal size={16} /> Categoria
-          </span>
-          <div className="filter-chips">
-            {["Todas", ...categories].map((c) => (
-              <button
-                key={c}
-                className={`filter-chip ${c === category ? "selected" : ""}`}
-                aria-pressed={c === category}
-                onClick={() => {
-                  setCategory(c);
-                  setPage(1);
-                }}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
+  async function remove() {
+    if (!selected || lock.current) return;
+    lock.current = true; setBusy(true); setFormError("");
+    try { await deleteExpense(selected.id); close(); setNotice("Despesa excluída."); resource.refresh(); }
+    catch (error) { setFormError(requestError(error)); }
+    finally { lock.current = false; setBusy(false); }
+  }
+  async function download() {
+    setExporting(true); setActionError("");
+    try {
+      const blob = await exportExpenses(); const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a"); anchor.href = url; anchor.download = "despesas.csv"; anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000); setNotice("CSV de todas as suas despesas exportado.");
+    } catch (error) { setActionError(requestError(error)); }
+    finally { setExporting(false); }
+  }
+  return <>
+    <PageIntro eyebrow="SEUS GASTOS DO DIA A DIA" title="Pequenos gastos. Visão completa." description="Encontre e acompanhe as despesas do seu mês." action={<Button onClick={() => show()}><Plus size={17} /> Adicionar despesa</Button>} />
+    {notice && <p className="feedback success" role="status">{notice}</p>}
+    {actionError && <p className="feedback" role="alert">{actionError}</p>}
+    <div className="filters-panel">
+      <div className="search-row"><div className="search-input"><Search size={18} /><Input aria-label="Buscar despesas" placeholder="Buscar despesas…" value={filters.description} onChange={event => change({ description: event.target.value })} /></div><Button variant="outline" disabled={exporting} onClick={download}><Download size={16} /> {exporting ? "Exportando…" : "Exportar CSV (todas)"}</Button></div>
+      <div className="filter-row"><span className="small filter-label">Categoria</span><div className="filter-chips">{[["", "Todas"], ...Object.entries(categoryLabels)].map(([value, label]) => <button key={value} className={`filter-chip ${filters.category === value ? "selected" : ""}`} aria-pressed={filters.category === value} onClick={() => change({ category: value })}>{label}</button>)}</div></div>
+      <div className="filter-controls">
+        <label>Período<select className="form-select" value={filters.period} onChange={event => change({ period: event.target.value })}><option value="SELECTED_MONTH">Mês selecionado</option><option value="ALL">Todas as datas</option><option value="CUSTOM">Intervalo personalizado</option><option value="THIS_MONTH">Mês atual</option><option value="LAST_MONTH">Mês anterior</option><option value="LAST_7_DAYS">Últimos 7 dias</option><option value="LAST_30_DAYS">Últimos 30 dias</option><option value="THIS_YEAR">Ano atual</option></select></label>
+        {filters.period === "CUSTOM" && <><label>De<Input type="date" value={filters.start} onChange={event => change({ start: event.target.value })} /></label><label>Até<Input type="date" min={filters.start} value={filters.end} onChange={event => change({ end: event.target.value })} /></label></>}
+        <label>Ordenar<select className="form-select" value={filters.sort} onChange={event => change({ sort: event.target.value })}><option value="date:desc">Mais recentes</option><option value="date:asc">Mais antigas</option><option value="amount:desc">Maior valor</option><option value="amount:asc">Menor valor</option><option value="description:asc">Descrição A–Z</option><option value="description:desc">Descrição Z–A</option></select></label>
+        <Button variant="ghost" onClick={() => change({ description: "", category: "", period: "SELECTED_MONTH", start: "", end: "", sort: "date:desc" })}>Limpar filtros</Button>
       </div>
-      <div className="results-heading">
-        <p className="small muted">
-          {filtered.length} despesas de demonstração{" "}
-          <span className="dot-separator">·</span>{" "}
-          {money(filtered.reduce((s, e) => s + e.amount, 0))} total
-        </p>
-        {(search || category !== "Todas") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSearch("");
-              setCategory("Todas");
-              setPage(1);
-            }}
-          >
-            Limpar filtros
-          </Button>
-        )}
-      </div>
-      {filtered.length ? (
-        <div className="expense-grid">
-          {filtered.slice((currentPage - 1) * 6, currentPage * 6).map((e) => (
-            <ExpenseCard key={e.id} expense={e} onEdit={() => show(e)} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState />
-      )}
-      <nav className="pagination" aria-label="Páginas de despesas">
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Página anterior"
-          disabled={currentPage === 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          <ChevronLeft />
-        </Button>
-        {Array.from({ length: pages }, (_, i) => (
-          <Button
-            key={i}
-            variant={currentPage === i + 1 ? "default" : "ghost"}
-            size="icon"
-            aria-label={`Página ${i + 1}`}
-            aria-current={currentPage === i + 1 ? "page" : undefined}
-            onClick={() => setPage(i + 1)}
-          >
-            {i + 1}
-          </Button>
-        ))}
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Próxima página"
-          disabled={currentPage === pages}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          <ChevronRight />
-        </Button>
-      </nav>
-      <Dialog
-        open={open}
-        onOpenChange={(value) => {
-          setOpen(value);
-          if (!value) setSearchParams({}, { replace: true });
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {selected ? "Detalhes da despesa" : "Adicionar uma despesa"}
-            </DialogTitle>
-            <DialogDescription>
-              Prévia visual. Estes campos não salvam dados.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            key={selected?.id ?? "new"}
-            onSubmit={(e) => e.preventDefault()}
-            className="form-stack"
-          >
-            <label>
-              Descrição
-              <Input
-                defaultValue={selected?.description}
-                placeholder="Qual foi o motivo?"
-              />
-            </label>
-            <div className="form-columns">
-              <label>
-                Valor (R$)
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  defaultValue={selected?.amount}
-                  placeholder="0,00"
-                />
-              </label>
-              <label>
-                Data
-                <Input
-                  type="date"
-                  defaultValue={selected?.date ?? `${month}-07`}
-                />
-              </label>
-            </div>
-            <label>
-              Categoria
-              <select
-                className="form-select"
-                defaultValue={selected?.category ?? "Alimentação"}
-              >
-                {categories.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </label>
-            <Button disabled>Salvar despesa · Em breve</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+    </div>
+    {resource.loading || resource.error ? <ResourceState error={resource.error} retry={resource.refresh} /> : <>
+      <div className="results-heading"><p className="small muted">{resource.data?.totalElements} despesas encontradas</p></div>
+      {resource.data?.content.length ? <div className="expense-grid">{resource.data.content.map(expense => <ExpenseCard key={expense.id} expense={presentExpense(expense)} onEdit={() => show(expense)} />)}</div> : <EmptyState />}
+      {!!resource.data?.totalPages && <nav className="pagination" aria-label="Páginas de despesas"><Button variant="outline" size="icon" aria-label="Página anterior" disabled={resource.data.page === 0} onClick={() => setFilters(current => ({ ...current, page: resource.data!.page - 1 }))}><ChevronLeft /></Button><span>Página {resource.data.page + 1} de {resource.data.totalPages}</span><Button variant="outline" size="icon" aria-label="Próxima página" disabled={resource.data.page + 1 >= resource.data.totalPages} onClick={() => setFilters(current => ({ ...current, page: resource.data!.page + 1 }))}><ChevronRight /></Button></nav>}
+    </>}
+    <Dialog open={open || searchParams.get("new") === "1"} onOpenChange={value => { if (!busy) { if (!value) close(); else setOpen(value); } }}><DialogContent className="expense-dialog" showCloseButton={!busy} onEscapeKeyDown={event => { if (busy) event.preventDefault(); }} onPointerDownOutside={event => { if (busy) event.preventDefault(); }}><DialogHeader><DialogTitle>{selected ? "Editar despesa" : "Adicionar uma despesa"}</DialogTitle><DialogDescription>Preencha os dados para salvar na sua conta.</DialogDescription></DialogHeader>
+      <form key={selected?.id ?? "new"} className="form-stack" onSubmit={submit}><fieldset disabled={busy} className="form-stack">
+        <label>Descrição<Input name="description" required maxLength={50} defaultValue={selected?.description} placeholder="Qual foi o motivo?" /></label>
+        <div className="form-columns"><label>Valor (R$)<Input name="amount" type="number" required min="0" step="0.01" defaultValue={selected?.amount} placeholder="0,00" /></label><label>Data e hora<Input name="date" type="datetime-local" required step="any" defaultValue={selected?.date ?? `${month}-01T12:00`} /></label></div>
+        <label>Categoria<select name="category" className="form-select" defaultValue={selected?.category ?? "FOOD"}>{selected && !categoryLabels[selected.category] && <option value={selected.category}>{selected.category}</option>}{Object.entries(categoryLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+        {formError && <p role="alert" className="feedback">{formError}</p>}
+        <Button type="submit">{busy ? "Salvando…" : "Salvar despesa"}</Button>
+        {selected && (confirmDelete ? <div className="confirmation"><p>Excluir “{selected.description}”? Esta ação não pode ser desfeita.</p><Button type="button" variant="destructive" onClick={remove}>Confirmar exclusão</Button><Button type="button" variant="ghost" onClick={() => setConfirmDelete(false)}>Cancelar</Button></div> : <Button type="button" variant="outline" onClick={() => setConfirmDelete(true)}>Excluir despesa</Button>)}
+      </fieldset></form>
+    </DialogContent></Dialog>
+  </>;
 }

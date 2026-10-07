@@ -12,7 +12,7 @@ import {
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "./theme-context";
-import { categoryColors, type DemoExpense } from "@/data/demo";
+import { categoryColors } from "@/data/categories";
 import { dateLabel, money } from "@/lib/format";
 const categoryIcons = {
   Alimentação: Coffee,
@@ -75,7 +75,7 @@ export function ExpenseCard({
   expense,
   onEdit,
 }: {
-  expense: Omit<DemoExpense, "category"> & { category: string };
+  expense: { id: number; description: string; amount: number; date: string; category: string; note?: string };
   onEdit?: () => void;
 }) {
   const Icon = categoryIcons[expense.category as keyof typeof categoryIcons] ?? WalletCards;
@@ -116,7 +116,7 @@ export function EmptyState() {
   return (
     <div className="empty-state">
       <WalletCards size={32} />
-      <h3>Nenhuma despesa de demonstração</h3>
+      <h3>Nenhuma despesa encontrada</h3>
       <p className="muted">Tente outro mês ou limpe os filtros.</p>
     </div>
   );

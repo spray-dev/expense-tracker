@@ -51,5 +51,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await api.post("/api/auth/register", { username, email, password });
     try { await login(email, password); } catch { throw new Error("Cadastro concluído. Entre com seu e-mail e senha para continuar."); }
   }
-  return <AuthContext.Provider value={{ user, loading, error, retry: () => { setLoading(true); setError(""); setAttempt(v => v + 1); }, login, register, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, error, retry: () => { setLoading(true); setError(""); setAttempt(v => v + 1); }, login, register, updateUser: updated => { if (getToken()) setUser(current => current?.id === updated.id ? updated : current); }, logout }}>{children}</AuthContext.Provider>;
 }

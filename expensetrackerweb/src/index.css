@@ -1381,3 +1381,23 @@ progress::-moz-progress-bar {
 .over-budget::-moz-progress-bar { background: var(--destructive); }
 .dark .featured { background: #bd8c2e; border-color: #bd8c2e; }
 .featured .stat-pill { background: #30230912; }
+
+/* Integrated forms retain the existing responsive panels and theme. */
+fieldset.form-stack { border: 0; padding: 0; margin: 0; min-width: 0; }
+.filter-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-top: 16px; }
+.filter-controls label { display: grid; gap: 6px; flex: 1 1 160px; }
+.feedback { padding: 12px 16px; border: 1px solid var(--destructive); border-radius: var(--radius); color: var(--destructive); margin: 12px 0; overflow-wrap: anywhere; }
+.feedback.success { border-color: var(--border); color: var(--foreground); background: var(--accent); }
+.confirmation { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--destructive); border-radius: var(--radius); margin-top: 16px; }
+.profile-form { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+.account-note > button { margin: 16px 8px 0 0; }
+.yearly-summary { margin-top: 24px; }
+.yearly-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 24px; }
+.category-ranking > span:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
+.form-stack label, .profile-heading h2, .expense-card h3 { overflow-wrap: anywhere; }
+@media (max-width: 650px) {
+  .yearly-grid { grid-template-columns: 1fr; }
+  .filter-controls > label { flex-basis: 100%; }
+  .confirmation button { white-space: normal; height: auto; min-height: 36px; }
+}
+.expense-dialog { max-height: calc(100dvh - 32px); overflow-y: auto; }

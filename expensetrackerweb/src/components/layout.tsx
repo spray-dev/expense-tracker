@@ -134,7 +134,7 @@ export function AppLayout() {
           <div className="topbar-actions">
             <label className="month-select">
               <span className="sr-only">Mês selecionado</span>
-              <select value={month} onChange={(e) => setMonth(e.target.value)}>
+              <select aria-label="Mês selecionado" value={month} onChange={(e) => setMonth(e.target.value)}>
                 {Array.from({ length: 24 }, (_, offset) => {
                   const now = calendarBase;
                   const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
@@ -156,7 +156,7 @@ export function AppLayout() {
           <footer className="page-footer">
             <span>Controle de Despesas</span>
             <span>
-              <i /> {location.pathname === "/dashboard" ? "Dados da sua conta" : "Dados financeiros de demonstração"}
+              <i /> Dados da sua conta
             </span>
           </footer>
         </main>
