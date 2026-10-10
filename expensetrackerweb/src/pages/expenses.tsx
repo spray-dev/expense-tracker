@@ -9,6 +9,7 @@ import { ResourceState } from "@/components/resource-state";
 import { categoryLabels } from "@/data/categories";
 import { presentExpense } from "@/lib/dashboard";
 import { listExpensePage, saveExpense, deleteExpense, exportExpenses, requestError, type Expense, type Filters } from "@/lib/finance";
+import { expenseDateFields, parseExpenseDate } from "@/lib/expense-date";
 import { useResource } from "@/lib/use-resource";
 import type { MonthContext } from "@/components/layout";
 
@@ -34,11 +35,14 @@ export default function Expenses() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (lock.current) return;
     const fields = new FormData(event.currentTarget);
+    let date: string;
+    try { date = parseExpenseDate(String(fields.get("date") ?? ""), String(fields.get("time") ?? "")); }
+    catch (error) { setFormError((error as Error).message); return; }
     const description = String(fields.get("description")).trim();
     if (!description) { setFormError("Informe uma descrição."); return; }
     lock.current = true; setBusy(true); setFormError("");
     try {
-      await saveExpense({ description, amount: Number(fields.get("amount")), date: String(fields.get("date")), category: String(fields.get("category")) }, selected?.id);
+      await saveExpense({ description, amount: Number(fields.get("amount")), date, category: String(fields.get("category")) }, selected?.id);
       close(); setNotice(selected ? "Despesa atualizada." : "Despesa adicionada. Se não aparecer, confira o mês e os filtros selecionados."); resource.refresh();
     } catch (error) { setFormError(requestError(error)); }
     finally { lock.current = false; setBusy(false); }
@@ -59,6 +63,7 @@ export default function Expenses() {
     } catch (error) { setActionError(requestError(error)); }
     finally { setExporting(false); }
   }
+  const dateFields = expenseDateFields(selected?.date ?? `${month}-01T12:00`);
   return <>
     <PageIntro eyebrow="SEUS GASTOS DO DIA A DIA" title="Pequenos gastos. Visão completa." description="Encontre e acompanhe as despesas do seu mês." action={<Button onClick={() => show()}><Plus size={17} /> Adicionar despesa</Button>} />
     {notice && <p className="feedback success" role="status">{notice}</p>}
@@ -81,7 +86,8 @@ export default function Expenses() {
     <Dialog open={open || searchParams.get("new") === "1"} onOpenChange={value => { if (!busy) { if (!value) close(); else setOpen(value); } }}><DialogContent className="expense-dialog" showCloseButton={!busy} onEscapeKeyDown={event => { if (busy) event.preventDefault(); }} onPointerDownOutside={event => { if (busy) event.preventDefault(); }}><DialogHeader><DialogTitle>{selected ? "Editar despesa" : "Adicionar uma despesa"}</DialogTitle><DialogDescription>Preencha os dados para salvar na sua conta.</DialogDescription></DialogHeader>
       <form key={selected?.id ?? "new"} className="form-stack" onSubmit={submit}><fieldset disabled={busy} className="form-stack">
         <label>Descrição<Input name="description" required maxLength={50} defaultValue={selected?.description} placeholder="Qual foi o motivo?" /></label>
-        <div className="form-columns"><label>Valor (R$)<Input name="amount" type="number" required min="0" step="0.01" defaultValue={selected?.amount} placeholder="0,00" /></label><label>Data e hora<Input name="date" type="datetime-local" required step="any" defaultValue={selected?.date ?? `${month}-01T12:00`} /></label></div>
+        <label>Valor (R$)<Input name="amount" type="number" required min="0" step="0.01" defaultValue={selected?.amount} placeholder="0,00" /></label>
+        <div className="form-columns"><label>Data (DD/MM/AAAA)<Input name="date" type="text" inputMode="numeric" placeholder="DD/MM/AAAA" defaultValue={dateFields.date} /></label><label>Hora (24h)<Input name="time" type="text" inputMode="decimal" placeholder="HH:mm — ex.: 19:30" defaultValue={dateFields.time} /></label></div>
         <label>Categoria<select name="category" className="form-select" defaultValue={selected?.category ?? "FOOD"}>{selected && !categoryLabels[selected.category] && <option value={selected.category}>{selected.category}</option>}{Object.entries(categoryLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
         {formError && <p role="alert" className="feedback">{formError}</p>}
         <Button type="submit">{busy ? "Salvando…" : "Salvar despesa"}</Button>
