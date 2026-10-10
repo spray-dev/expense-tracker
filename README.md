@@ -57,7 +57,7 @@ Configure these variables through your terminal environment or IDE run configura
 
 ```powershell
 cd expensetrackerapi
-.\mvnw.cmd spring-boot:run
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
 ```
 
 The API uses Spring Boot's default address `http://localhost:8080`. There is no backend `.env.example` or automatic dotenv loader in the repository; a `.env` file alone does not configure this process. On Unix-like systems, use `./mvnw` instead of `.\mvnw.cmd`.
@@ -73,24 +73,29 @@ npm ci
 npm run dev -- --host localhost --port 5173 --strictPort
 ```
 
-Open `http://localhost:5173`. Current backend CORS permits exactly that origin. `http://127.0.0.1:5173` and other ports are different origins. Register an account to begin adding expenses.
+Open `http://localhost:5173`. The dev profile permits that origin by default; set `CORS_ALLOWED_ORIGIN` to override it. `http://127.0.0.1:5173` and other ports are different origins. Register an account to begin adding expenses.
 
-The example points to the local API. Restart Vite after changing frontend variables. `npm run build` produces `dist/`; `npm run preview` serves that build locally, but its default origin is not included in current backend CORS.
+The example points to the local API. Restart Vite after changing frontend variables. `npm run build` produces `dist/`; `npm run preview` serves that build locally, but set `CORS_ALLOWED_ORIGIN` to its origin before starting the backend.
 
 ## Configuration
 
 | Variable / property | Required / default | Purpose |
 | --- | --- | --- |
-| `DB_URL` | Optional; `jdbc:postgresql://localhost:5432/expensetracker` | Backend PostgreSQL JDBC URL |
-| `DB_USERNAME` | Optional; `postgres` | Database username |
+| `DB_URL` | Dev default: `jdbc:postgresql://localhost:5432/expensetracker`; required otherwise | Backend PostgreSQL JDBC URL |
+| `DB_USERNAME` | Dev default: `postgres`; required otherwise | Database username |
 | `DB_PASSWORD` | Required; no default | Database password; keep private |
+| `CORS_ALLOWED_ORIGIN` | Dev default: `http://localhost:5173`; required otherwise | Single allowed frontend origin (scheme, host, optional port; no path or trailing slash) |
 | `JWT_SECRET` | Required; no default | Base64-encoded HMAC signing key; keep private |
 | `jwt.expiration` | Configured as `604800000` milliseconds (7 days) | JWT lifetime in backend properties |
 | `VITE_API_BASE_URL` | Example and client fallback: `http://localhost:8080` | Public frontend API base URL, without an `/api` suffix |
 
 See [application.properties](expensetrackerapi/src/main/resources/application.properties) and the frontend [.env.example](expensetrackerweb/.env.example). `VITE_API_BASE_URL` is included in the browser build and must never contain secrets; set it before building for another environment.
 
-Current development settings use `spring.jpa.hibernate.ddl-auto=update` and SQL logging. CORS is configured in `SecurityConfig`, rather than an application-specific environment variable. Production configuration and migrations remain future work.
+Shared `application.properties` keeps Hibernate at `validate`, JWT expiration at 7 days, SQL logging off, and required environment-backed database, JWT, and CORS settings. Flyway remains enabled through Spring Boot and applies `db/migration` scripts at startup before Hibernate validates the schema.
+
+Select exactly one environment profile. `dev` enables SQL logging and supplies only the local database URL, username, and CORS defaults. `prod` explicitly disables SQL logging and inherits all required values without local fallbacks. No profile is selected automatically: with no active profile, shared settings apply and the same explicit environment values are required. Do not activate `dev` and `prod` together.
+
+For production, inject `SPRING_PROFILES_ACTIVE=prod`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, and `CORS_ALLOWED_ORIGIN` through the hosting platform. Build with `./mvnw package` (or `.\mvnw.cmd package`), then run `java -jar target/expensetrackerapi-0.0.1-SNAPSHOT.jar`. The CORS property `app.cors.allowed-origin` permits one exact origin; allowed methods and headers are unchanged. Missing required values prevent successful application startup. A backend `.env` file is not loaded automatically.
 
 ## API overview
 
@@ -133,10 +138,10 @@ The frontend performs registration, then login, then `/api/users/me` to establis
 From `expensetrackerapi`, with backend database environment configured and Docker available:
 
 ```powershell
-.\mvnw.cmd test
+.\mvnw.cmd test "-Dspring.profiles.active=dev"
 ```
 
-The context-load test uses the configured PostgreSQL connection (and supplies its own test JWT key). Repository tests use Testcontainers-managed PostgreSQL. Use a development/test database rather than production; the context starts with the current schema-update setting.
+The context-load test uses the configured PostgreSQL connection (and supplies its own test JWT key). Repository tests use Testcontainers-managed PostgreSQL. Use a development/test database rather than production; the context runs Flyway migrations and then validates the schema.
 
 From `expensetrackerweb`:
 
@@ -149,6 +154,8 @@ npm run lint
 Frontend tests cover token handling, protected/public 401 behavior, stale-session responses, dashboard contracts, dates/categories, expense filters and CRUD/CSV, pagination recovery, budgets, analytics, profile, deletion, and cancellation. They are focused client/contract tests, not browser end-to-end tests. Backend tests cover controllers, services, CSV, persistence queries, and context startup.
 
 Verification on **2026-10-08**: all **16 frontend tests** passed; TypeScript/Vite build and Oxlint passed. The backend run passed **33 tests**, but three repository test classes failed during Testcontainers initialization (`Could not find a valid Docker environment`). Docker CLI responded, but Testcontainers could not initialize its environment in that run. A full passing backend count is intentionally not claimed; rerun after resolving the local Testcontainers/Docker connection.
+
+Backend verification on **2026-10-10**: **37 tests passed**, including four profile/CORS regression tests and the application context against local PostgreSQL. Three repository test classes errored because Testcontainers could not find a Docker environment (40 reported tests, zero assertion failures). Flyway validated the existing migration and reported the schema up to date. Maven packaging with `-DskipTests` succeeded; this does not imply a fully passing suite.
 
 ## Project structure
 
@@ -200,10 +207,10 @@ Once captured and committed, replace this checklist with image links and short c
 **v1 application functionality is complete.** Remaining work concerns production readiness and operations:
 
 - Provision the production PostgreSQL database and establish backups/recovery procedures.
-- Configure production secrets, API URL, CORS, and appropriate logging.
-- Introduce versioned migrations (for example, Flyway) instead of relying on schema auto-update.
+- Inject production secrets, API URL, and frontend origin through the hosting platform using the prod profile.
+- Verify Flyway migrations against the provisioned database and plan future schema changes through versioned scripts.
 - Add CI for backend tests and frontend tests/lint/build.
 - Deploy the API and frontend with HTTPS, then verify the deployed flow end to end.
 - Establish health monitoring and operational procedures; add the live demo URL and screenshots to this page.
 
-No production deployment, migration, or CI implementation is included in this documentation pass.
+Flyway migrations and environment profiles are configured. Hosting, deployment, and CI remain pending.

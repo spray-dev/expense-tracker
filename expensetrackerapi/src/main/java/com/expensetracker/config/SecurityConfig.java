@@ -1,5 +1,6 @@
 package com.expensetracker.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,6 +35,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration 
 public class SecurityConfig {
+    private final String allowedOrigin;
+
+    public SecurityConfig(@Value("${app.cors.allowed-origin}") String allowedOrigin) {
+        this.allowedOrigin = allowedOrigin;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
@@ -60,7 +67,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173"));
+                List.of(allowedOrigin));
 
         configuration.setAllowedMethods(
                 List.of(
