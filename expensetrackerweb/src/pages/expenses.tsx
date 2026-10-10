@@ -87,7 +87,7 @@ export default function Expenses() {
       <form key={selected?.id ?? "new"} className="form-stack" onSubmit={submit}><fieldset disabled={busy} className="form-stack">
         <label>Descrição<Input name="description" required maxLength={50} defaultValue={selected?.description} placeholder="Qual foi o motivo?" /></label>
         <label>Valor (R$)<Input name="amount" type="number" required min="0" step="0.01" defaultValue={selected?.amount} placeholder="0,00" /></label>
-        <div className="form-columns"><label>Data (DD/MM/AAAA)<Input name="date" type="text" inputMode="numeric" placeholder="DD/MM/AAAA" defaultValue={dateFields.date} /></label><label>Hora (24h)<Input name="time" type="text" inputMode="decimal" placeholder="HH:mm — ex.: 19:30" defaultValue={dateFields.time} /></label></div>
+        <div className="form-columns"><label>Data (DD/MM/AAAA)<Input name="date" type="text" inputMode="numeric" placeholder="DD/MM/AAAA" defaultValue={dateFields.date} /></label><label>Hora (24h)<Input name="time" type="time" step="60" placeholder="HH:mm — ex.: 19:30" defaultValue={dateFields.time} /></label></div>
         <label>Categoria<select name="category" className="form-select" defaultValue={selected?.category ?? "FOOD"}>{selected && !categoryLabels[selected.category] && <option value={selected.category}>{selected.category}</option>}{Object.entries(categoryLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
         {formError && <p role="alert" className="feedback">{formError}</p>}
         <Button type="submit">{busy ? "Salvando…" : "Salvar despesa"}</Button>
