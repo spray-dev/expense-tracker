@@ -2,7 +2,15 @@
 
 A full-stack personal expense manager built with React, TypeScript, Spring Boot, and PostgreSQL. Users manage their own expenses, follow monthly spending, set budgets, and review spending patterns.
 
-**Status:** v1 application functionality is complete. Production deployment and operations are the next phase.
+**Status:** v1 is deployed, with automated backend and frontend verification configured in GitHub Actions.
+
+## Deployed app
+
+- **Live frontend (Vercel):** [Open Expense Tracker](https://expense-tracker-coelho.vercel.app)
+- **Backend API (Railway):** [API base URL](https://expense-tracker-production-4dc6.up.railway.app) — protected API routes require a JWT; the base URL is not a browser landing page.
+- **Health monitoring:** [Health endpoint](https://expense-tracker-production-4dc6.up.railway.app/actuator/health) is public after the backend deploys this revision. Other actuator paths still require authentication and must also be exposed by Actuator configuration to be available.
+
+Sign in or register to use the deployed app. Each account sees its own data.
 
 The product brand is **Expense Tracker**. The interface is Brazilian Portuguese (pt-BR), with Brazilian date/number conventions and BRL currency formatting. Financial pages use the authenticated account's data rather than seeded demonstration data.
 
@@ -44,7 +52,7 @@ Backend versions come from [pom.xml](expensetrackerapi/pom.xml); frontend depend
 
 - JDK 25 with `JAVA_HOME` configured.
 - Node.js satisfying Vite's locked engine requirement: `^20.19.0 || >=22.12.0`, plus npm. Verification used Node 24.19.0.
-- A reachable PostgreSQL instance and an existing database (default name: `expensetracker`). The application creates/updates tables, not the database itself.
+- A reachable PostgreSQL instance and an existing database (default name: `expensetracker`). Flyway applies versioned schema migrations; Hibernate validates the schema. The database itself must already exist.
 - For the complete backend test suite, a Docker environment accessible to Testcontainers and permission to pull `postgres:18-alpine`.
 
 Commands below use PowerShell and start from the repository root unless indicated. Maven is supplied by the wrapper; no global Maven installation is required. Initial dependency downloads require network access.
@@ -99,12 +107,13 @@ For production, inject `SPRING_PROFILES_ACTIVE=prod`, `DB_URL`, `DB_USERNAME`, `
 
 ## API overview
 
-Paths are relative to the API base URL. Except for login and registration, routes require `Authorization: Bearer <token>`. Responses are JSON except CSV export and empty deletion responses.
+Paths are relative to the API base URL. Except for login, registration, and the exact `/actuator/health` path, routes require `Authorization: Bearer <token>`. Responses are JSON except CSV export and empty deletion responses.
 
 | Access | Method | Route | Purpose |
 | --- | --- | --- | --- |
 | Public | POST | `/api/auth/register` | Create an account; returns user details (201), not a JWT |
 | Public | POST | `/api/auth/login` | Authenticate email/password; returns `{ token }` |
+| Public | GET | `/actuator/health` | Actuator health status; details follow the default Actuator visibility policy |
 | Authenticated | GET / DELETE | `/api/users/me` | Current profile / delete account (204) |
 | Authenticated | PATCH | `/api/users/me/username`, `/email`, `/password` | Update one profile field; abbreviated suffixes share `/api/users/me` |
 | Authenticated | GET / POST | `/api/expenses` | Filtered paginated list / create expense (201) |
@@ -126,7 +135,7 @@ The frontend performs registration, then login, then `/api/users/me` to establis
 ## Security and design notes
 
 - Passwords are hashed with BCrypt when created or changed. Profile response DTOs omit password hashes.
-- Spring Security validates signed JWT bearer tokens and expiration. Sessions are stateless; CSRF is disabled for this bearer-auth API. Login and registration are the only explicitly public routes.
+- Spring Security validates signed JWT bearer tokens and expiration. Sessions are stateless; CSRF is disabled for this bearer-auth API. Login, registration, and the exact `/actuator/health` path are explicitly public. Other actuator paths, including health subpaths, remain authenticated; no wildcard actuator permission is granted.
 - Ownership comes from the JWT subject, rather than a client-supplied owner ID. Expense lookups/mutations, lists, exports, analytics, and budgets are scoped to that ID.
 - Account deletion transactionally deletes that account's expenses and budgets before deleting the user. The frontend confirms deletion and clears its local session after success.
 - The browser keeps the JWT in memory and `sessionStorage` under `expense-auth-token`, with a memory-only fallback. Protected 401 responses and expiration clear the session; stale responses from an older session are guarded against. This storage is accessible to same-origin JavaScript, so XSS prevention matters.
@@ -146,16 +155,23 @@ The context-load test uses the configured PostgreSQL connection (and supplies it
 From `expensetrackerweb`:
 
 ```powershell
-npm run test:auth
+npm test
 npm run build
 npm run lint
 ```
 
 Frontend tests cover token handling, protected/public 401 behavior, stale-session responses, dashboard contracts, dates/categories, expense filters and CRUD/CSV, pagination recovery, budgets, analytics, profile, deletion, and cancellation. They are focused client/contract tests, not browser end-to-end tests. Backend tests cover controllers, services, CSV, persistence queries, and context startup.
 
-Verification on **2026-10-08**: all **16 frontend tests** passed; TypeScript/Vite build and Oxlint passed. The backend run passed **33 tests**, but three repository test classes failed during Testcontainers initialization (`Could not find a valid Docker environment`). Docker CLI responded, but Testcontainers could not initialize its environment in that run. A full passing backend count is intentionally not claimed; rerun after resolving the local Testcontainers/Docker connection.
+Verification on **2026-10-10** for this finalization: all **20 frontend tests** passed; Oxlint and the TypeScript/Vite production build passed. The new focused security suite passed **3/3 tests**, covering public health, protected actuator/application paths, and invalid bearer rejection. The full backend run reported **43 tests: 40 passed, 3 errors, 0 assertion failures, 0 skipped**. The three repository classes failed during Testcontainers initialization because local Docker was unavailable; a complete passing backend suite is not claimed locally.
 
-Backend verification on **2026-10-10**: **37 tests passed**, including four profile/CORS regression tests and the application context against local PostgreSQL. Three repository test classes errored because Testcontainers could not find a Docker environment (40 reported tests, zero assertion failures). Flyway validated the existing migration and reported the schema up to date. Maven packaging with `-DskipTests` succeeded; this does not imply a fully passing suite.
+## Continuous integration
+
+[CI workflow](.github/workflows/ci.yml) runs on pushes to `main`, pull requests targeting `main`, and manual dispatch. Both jobs run for every trigger, including documentation changes. It uses read-only repository permissions and cancels superseded runs for the same ref.
+
+- **Backend:** Ubuntu, Eclipse Temurin Java 25, Maven dependency cache, and `bash ./mvnw --batch-mode --no-transfer-progress verify` from `expensetrackerapi`. A health-checked PostgreSQL 18 Alpine service supplies a disposable database for the full application context. The runner's Docker daemon is checked and remains available for the repository tests' separate Testcontainers databases. No tests are skipped. Surefire reports are uploaded even when the job fails. Timeout: 20 minutes.
+- **Frontend:** Ubuntu, Node 24, npm cache keyed by the frontend lockfile, then `npm ci`, `npm test`, `npm run lint`, and `npm run build` from `expensetrackerweb`. Timeout: 10 minutes.
+
+CI uses explicit, deterministic test-only database credentials, JWT key, and localhost CORS origin; it does not read deployment secrets or connect to production. The backend runs with the `prod` profile to exercise migrations and schema validation with those disposable values. This workflow verifies and packages the project; hosting platforms manage any automatic redeployment independently.
 
 ## Project structure
 
@@ -188,29 +204,36 @@ expense-tracker/
     └── tests/                        # Node client/contract tests
 ```
 
-## Screenshots
+## Production screenshots
 
-No real application screenshots are currently tracked. Capture these from the running app using a dedicated account with non-sensitive data:
+Captured from the [deployed Vercel app](https://expense-tracker-coelho.vercel.app) on **2026-10-10**, using the authenticated account selected for screenshots. These are real production views; no records or UI were generated for the captures.
 
-| Suggested capture | Suggested future path (not yet present) |
-| --- | --- |
-| Dashboard, dark / light | `docs/screenshots/dashboard-dark.png`, `dashboard-light.png` |
-| Expenses | `docs/screenshots/expenses.png` |
-| Analytics / budget | `docs/screenshots/analytics.png`, `budget.png` |
-| Mobile layout | `docs/screenshots/mobile.png` |
-| Login / registration | `docs/screenshots/login.png`, `register.png` |
+### Dashboard — dark theme
 
-Once captured and committed, replace this checklist with image links and short captions. No screenshots or simulated UI images were generated for this documentation pass.
+Selected-month spending, budget, categories, and recent/largest expenses.
 
-## Status and next steps
+![Production dashboard in dark theme](docs/screenshots/dashboard-dark.jpg)
 
-**v1 application functionality is complete.** Remaining work concerns production readiness and operations:
+### Expenses — dark theme
 
-- Provision the production PostgreSQL database and establish backups/recovery procedures.
-- Inject production secrets, API URL, and frontend origin through the hosting platform using the prod profile.
-- Verify Flyway migrations against the provisioned database and plan future schema changes through versioned scripts.
-- Add CI for backend tests and frontend tests/lint/build.
-- Deploy the API and frontend with HTTPS, then verify the deployed flow end to end.
-- Establish health monitoring and operational procedures; add the live demo URL and screenshots to this page.
+Production expense list with category, period, sorting, and CSV controls.
 
-Flyway migrations and environment profiles are configured. Hosting, deployment, and CI remain pending.
+![Production expenses in dark theme](docs/screenshots/expenses-dark.jpg)
+
+### Analytics — dark theme
+
+Six-month trend, category distribution, and annual summary.
+
+![Production analytics in dark theme](docs/screenshots/analytics-dark.jpg)
+
+### Mobile dashboard — light theme
+
+Responsive dashboard captured at a 390 × 844 CSS-pixel viewport.
+
+<img src="docs/screenshots/dashboard-mobile-light.jpg" alt="Production mobile dashboard in light theme" width="390">
+
+## Operational notes
+
+The frontend and API are deployed on Vercel and Railway. GitHub Actions verifies changes on main and pull requests. Public health access becomes available when Railway deploys this revision. Hosting redeployment depends on each platform's repository integration.
+
+Backups, recovery procedures, and ongoing monitoring are hosting operational responsibilities; their configuration is not verified by this repository. Local backend verification still requires a working Docker environment for the complete Testcontainers suite.
