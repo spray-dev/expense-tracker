@@ -8,7 +8,7 @@ A full-stack personal expense manager built with React, TypeScript, Spring Boot,
 
 - **Live frontend (Vercel):** [Open Expense Tracker](https://expense-tracker-coelho.vercel.app)
 - **Backend API (Railway):** [API base URL](https://expense-tracker-production-4dc6.up.railway.app) — protected API routes require a JWT; the base URL is not a browser landing page.
-- **Health monitoring:** [Health endpoint](https://expense-tracker-production-4dc6.up.railway.app/actuator/health) is public after the backend deploys this revision. Other actuator paths still require authentication and must also be exposed by Actuator configuration to be available.
+- **Health monitoring:** [Health endpoint](https://expense-tracker-production-4dc6.up.railway.app/actuator/health) is public and returned HTTP 200 with `UP` during production verification. Other actuator paths still require authentication and must also be exposed by Actuator configuration to be available.
 
 Sign in or register to use the deployed app. Each account sees its own data.
 
@@ -162,7 +162,7 @@ npm run lint
 
 Frontend tests cover token handling, protected/public 401 behavior, stale-session responses, dashboard contracts, dates/categories, expense filters and CRUD/CSV, pagination recovery, budgets, analytics, profile, deletion, and cancellation. They are focused client/contract tests, not browser end-to-end tests. Backend tests cover controllers, services, CSV, persistence queries, and context startup.
 
-Verification on **2026-10-10** for this finalization: all **20 frontend tests** passed; Oxlint and the TypeScript/Vite production build passed. The new focused security suite passed **3/3 tests**, covering public health, protected actuator/application paths, and invalid bearer rejection. The full backend run reported **43 tests: 40 passed, 3 errors, 0 assertion failures, 0 skipped**. The three repository classes failed during Testcontainers initialization because local Docker was unavailable; a complete passing backend suite is not claimed locally.
+Verification on **2026-10-10** for this finalization: all **20 frontend tests** passed; Oxlint and the TypeScript/Vite production build passed. The new focused security suite passed **3/3 tests**, covering public health, protected actuator/application paths, and invalid bearer rejection. The full backend run reported **43 tests: 40 passed, 3 errors, 0 assertion failures, 0 skipped**. The three repository classes failed during Testcontainers initialization because local Docker was unavailable; a complete passing backend suite is not claimed locally. The [first GitHub Actions run](https://github.com/spray-dev/expense-tracker/actions/runs/38081731497) passed both jobs: **55 backend tests passed with 0 failures, errors, or skips**, including the Docker-backed repository tests, and Maven packaging succeeded. Frontend tests, lint, and build also passed in CI. All four screenshot images were confirmed loaded in the published GitHub README.
 
 ## Continuous integration
 
@@ -234,6 +234,6 @@ Responsive dashboard captured at a 390 × 844 CSS-pixel viewport.
 
 ## Operational notes
 
-The frontend and API are deployed on Vercel and Railway. GitHub Actions verifies changes on main and pull requests. Public health access becomes available when Railway deploys this revision. Hosting redeployment depends on each platform's repository integration.
+The frontend and API are deployed on Vercel and Railway. GitHub Actions verifies changes on main and pull requests. Production verification returned HTTP 200 with `UP` for `/actuator/health`, and HTTP 401 without JWT for `/actuator/info`, `/actuator/health/readiness`, and `/api/expenses`. Hosting redeployment depends on each platform's repository integration.
 
 Backups, recovery procedures, and ongoing monitoring are hosting operational responsibilities; their configuration is not verified by this repository. Local backend verification still requires a working Docker environment for the complete Testcontainers suite.
