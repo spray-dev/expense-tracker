@@ -32,3 +32,33 @@ export function authError(error: unknown): string {
   if (error.response.status === 429) return "Muitas tentativas. Aguarde e tente novamente.";
   return "Não foi possível concluir a solicitação. Tente novamente.";
 }
+
+export const passwordRules = { minLength: 8, maxLength: 100 };
+export function validateNewPassword(password: string) {
+  return password.trim() && password.length >= passwordRules.minLength && password.length <= passwordRules.maxLength
+    ? "" : "A senha deve ter entre 8 e 100 caracteres e não pode conter apenas espaços.";
+}
+export async function forgotPassword(email: string) {
+  const { data } = await api.post<{ message: string }>("/api/auth/forgot-password", { email: email.trim() });
+  return data.message === "If an account exists for this email, a reset link has been sent."
+    ? "Se existir uma conta com este e-mail, um link para redefinir sua senha foi enviado."
+    : data.message;
+}
+export async function resetPassword(token: string, newPassword: string) {
+  if (!token.trim()) throw new Error("Abra o link enviado por e-mail ou solicite um novo link.");
+  const validation = validateNewPassword(newPassword);
+  if (validation) throw new Error(validation);
+  await api.post("/api/auth/reset-password", { token, newPassword });
+}
+export function passwordResetError(error: unknown, resetting: boolean): string {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message;
+    if (resetting && status === 400 && ["Invalid token", "Token has already been used", "Token has expired"].includes(message)) {
+      return "Este link é inválido, expirou ou já foi utilizado. Solicite um novo link para redefinir sua senha.";
+    }
+    if (!resetting && (status === 404 || status === 409)) return "Não foi possível enviar o link. Tente novamente mais tarde.";
+    if (status === 400) return resetting ? "Confira a nova senha e tente novamente." : "Confira o e-mail informado e tente novamente.";
+  }
+  return authError(error);
+}

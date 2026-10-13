@@ -166,3 +166,48 @@ await test('deleting the last item of a page falls back to a valid server page',
   const result = await finance.listExpensePage({ ...filters, page: 1 });
   assert.deepEqual(pages, [1, 0]); assert.equal(result.page, 0); assert.equal(result.content[0].id, 1);
 });
+
+const { forgotPassword, resetPassword, passwordResetError, validateNewPassword, passwordRules } = await import(apiModuleURL);
+await test('forgot password sends only email without JWT and translates the generic API response', async () => {
+  setToken('recovery-session');
+  api.defaults.adapter = async config => {
+    assert.equal(config.url, '/api/auth/forgot-password');
+    assert.equal(config.headers.Authorization, undefined);
+    assert.deepEqual(JSON.parse(config.data), { email: 'ana@example.com' });
+    return { data: { message: 'If an account exists for this email, a reset link has been sent.' }, status: 200, headers: {}, config };
+  };
+  assert.equal(await forgotPassword(' ana@example.com '), 'Se existir uma conta com este e-mail, um link para redefinir sua senha foi enviado.');
+  api.defaults.adapter = async config => ({ data: { message: 'Mensagem genérica da API.' }, status: 200, headers: {}, config });
+  assert.equal(await forgotPassword('ana@example.com'), 'Mensagem genérica da API.');
+});
+await test('reset submits query token and unchanged password without JWT and accepts an empty response', async () => {
+  api.defaults.adapter = async config => {
+    assert.equal(config.url, '/api/auth/reset-password');
+    assert.equal(config.headers.Authorization, undefined);
+    assert.deepEqual(JSON.parse(config.data), { token: 'url-safe_token', newPassword: ' password ' });
+    return { data: '', status: 200, headers: {}, config };
+  };
+  await resetPassword('url-safe_token', ' password ');
+  assert.equal(getToken(), 'recovery-session');
+});
+await test('missing tokens and invalid passwords never make a reset request', async () => {
+  let requests = 0;
+  api.defaults.adapter = async () => { requests++; throw new Error('unexpected request'); };
+  await assert.rejects(resetPassword('', 'password'), /link/);
+  for (const password of ['short', ' '.repeat(8), 'a'.repeat(101)]) await assert.rejects(resetPassword('token', password), /senha/);
+  assert.equal(requests, 0);
+  assert.deepEqual(passwordRules, { minLength: 8, maxLength: 100 });
+  assert.equal(validateNewPassword('a'.repeat(8)), '');
+  assert.equal(validateNewPassword('a'.repeat(100)), '');
+});
+await test('recovery errors are Portuguese, avoid account disclosure, and preserve existing auth on 401', async () => {
+  for (const message of ['Invalid token', 'Token has expired', 'Token has already been used']) {
+    assert.match(passwordResetError({ isAxiosError: true, response: { status: 400, data: { message } } }, true), /inválido, expirou ou já foi utilizado/);
+  }
+  for (const status of [404, 409]) assert.doesNotMatch(passwordResetError({ isAxiosError: true, response: { status } }, false), /cadastrado|existe/);
+  assert.match(passwordResetError({ isAxiosError: true }, false), /conexão/);
+  assert.match(passwordResetError({ isAxiosError: true, response: { status: 429 } }, true), /Muitas tentativas/);
+  api.defaults.adapter = async config => { throw { isAxiosError: true, config, response: { status: 401 } }; };
+  await assert.rejects(resetPassword('token', 'password'));
+  assert.equal(getToken(), 'recovery-session');
+});

@@ -1,22 +1,27 @@
 import { useAuth } from "@/auth/context";
-import { authError } from "@/lib/api";
+import { authError, forgotPassword, resetPassword, passwordResetError, passwordRules, validateNewPassword } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Brand, ThemeToggle } from "@/components/shared";
-export default function Auth({ register = false }: { register?: boolean }) {
+export default function Auth({ register = false, recovery }: { register?: boolean; recovery?: "forgot" | "reset" }) {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token") ?? "";
+  const resetting = recovery === "reset";
+  const [success, setSuccess] = useState("");
+  const title = recovery ? resetting ? "Redefinir senha" : "Recuperar acesso" : register ? "Criar conta" : "Entrar";
   const [visible, setVisible] = useState(false);
   const { user, loading, login, register: createAccount } = useAuth();
   const location = useLocation();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => { document.title = `${register ? "Criar conta" : "Entrar"} · Expense Tracker`; }, [register]);
+  useEffect(() => { document.title = `${title} · Expense Tracker`; }, [title]);
   const from = location.state?.from;
   const destination = typeof from === "string" && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/login") && !from.startsWith("/register") ? from : "/dashboard";
-  if (loading) return <div className="empty-state" role="status">Verificando sua sessão…</div>;
-  if (user) return <Navigate to={destination} replace />;
+  if (!recovery && loading) return <div className="empty-state" role="status">Verificando sua sessão…</div>;
+  if (!recovery && user) return <Navigate to={destination} replace />;
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
@@ -25,9 +30,16 @@ export default function Auth({ register = false }: { register?: boolean }) {
     try {
       const email = String(fields.get("email")).trim();
       const password = String(fields.get("password"));
-      if (register) await createAccount(String(fields.get("username")).trim(), email, password);
+      if (recovery === "forgot") setSuccess(await forgotPassword(email));
+      else if (resetting) {
+        const validation = validateNewPassword(password);
+        if (validation) { setError(validation); return; }
+        await resetPassword(token, password);
+        setSuccess("Senha redefinida com sucesso. Entre com sua nova senha.");
+      }
+      else if (register) await createAccount(String(fields.get("username")).trim(), email, password);
       else await login(email, password);
-    } catch (err) { setError(err instanceof Error && err.message.startsWith("Cadastro concluído") ? err.message : authError(err)); }
+    } catch (err) { setError(err instanceof Error && err.message.startsWith("Cadastro concluído") ? err.message : recovery ? passwordResetError(err, resetting) : authError(err)); }
     finally { setPending(false); }
   }
   return (
@@ -90,36 +102,36 @@ export default function Auth({ register = false }: { register?: boolean }) {
             <Brand />
           </div>
           <p className="eyebrow">
-            {register ? "SEU PRÓXIMO CAPÍTULO" : "BOM TER VOCÊ AQUI"}
+            {recovery ? "ACESSO COM TRANQUILIDADE" : register ? "SEU PRÓXIMO CAPÍTULO" : "BOM TER VOCÊ AQUI"}
           </p>
-          <h1>{register ? "Um novo começo." : "Bem-vindo de volta."}</h1>
+          <h1>{recovery ? resetting ? "Uma nova senha." : "Esqueceu sua senha?" : register ? "Um novo começo." : "Bem-vindo de volta."}</h1>
           <p className="muted">
-            {register
+            {recovery ? resetting ? "Escolha uma senha de 8 a 100 caracteres." : "Informe seu e-mail para receber um link de redefinição." : register
               ? "Crie um espaço para seus hábitos financeiros."
               : "Vamos acompanhar seu mês."}
           </p>
-          <form className="form-stack" onSubmit={submit}>
+          {success ? <p role="status">{success}</p> : resetting && !token.trim() ? <p role="alert">Este link não contém um token. Solicite um novo link para redefinir sua senha.</p> : <form className="form-stack" onSubmit={submit}>
             {register && (
               <label>
                 Nome de usuário
                 <Input name="username" required autoComplete="username" placeholder="Seu nome de usuário" />
               </label>
             )}
-            <label>
+            {!resetting && <label>
               E-mail
               <Input
                 name="email" required
-                autoComplete={register ? "email" : "username"}
+                autoComplete={register || recovery ? "email" : "username"}
                 type="email"
                 placeholder="voce@exemplo.com"
               />
-            </label>
-            <label>
-              Senha
+            </label>}
+            {recovery !== "forgot" && <label>
+              {resetting ? "Nova senha" : "Senha"}
               <div className="password-input">
                 <Input
-                  name="password" required minLength={register ? 8 : undefined} maxLength={register ? 100 : undefined}
-                  autoComplete={register ? "new-password" : "current-password"}
+                  name="password" required minLength={register || resetting ? passwordRules.minLength : undefined} maxLength={register || resetting ? passwordRules.maxLength : undefined}
+                  autoComplete={register || resetting ? "new-password" : "current-password"}
                   type={visible ? "text" : "password"}
                   placeholder="Digite sua senha"
                 />
@@ -133,18 +145,20 @@ export default function Auth({ register = false }: { register?: boolean }) {
                   {visible ? <EyeOff size={17} /> : <Eye size={17} />}
                 </Button>
               </div>
-            </label>
+            </label>}
+            {!register && !recovery && <p className="auth-switch"><Link to="/forgot-password">Esqueceu sua senha?</Link></p>}
             {error && <p role="alert">{error}</p>}
             <Button type="submit" disabled={pending}>
-              {pending ? "Aguarde…" : register ? "Criar conta" : "Entrar"}
+              {pending ? "Aguarde…" : recovery ? resetting ? "Redefinir senha" : "Enviar link" : register ? "Criar conta" : "Entrar"}
             </Button>
-          </form>
-          <p className="auth-switch">
+          </form>}
+          {recovery && <p className="auth-switch"><Link to="/login">Voltar para entrar</Link>{resetting && <> · <Link to="/forgot-password">Solicitar novo link</Link></>}</p>}
+          {!recovery && <p className="auth-switch">
             {register ? "Já tem uma conta?" : "Ainda não tem uma conta?"}{" "}
             <Link to={register ? "/login" : "/register"}>
               {register ? "Entrar" : "Criar uma conta"}
             </Link>
-          </p>
+          </p>}
 
         </div>
         <p className="auth-bottom small muted">Uma forma tranquila de acompanhar seus gastos.</p>
