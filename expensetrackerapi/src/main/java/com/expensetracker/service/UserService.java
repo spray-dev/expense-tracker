@@ -2,6 +2,8 @@ package com.expensetracker.service;
 
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.expensetracker.entity.User;
@@ -32,6 +34,10 @@ public class UserService {
     public User getUserById(Long id) {
         return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(
             "User with id " + id + " does not exist"));
+    }
+
+    public Optional<User> findUserByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     @Transactional 
