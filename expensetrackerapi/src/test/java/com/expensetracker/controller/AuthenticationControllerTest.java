@@ -43,6 +43,7 @@ class AuthenticationControllerTest {
     @MockitoBean UserRepository users;
     @MockitoBean ExpenseRepository expenses;
     @MockitoBean BudgetRepository budgets;
+    @MockitoBean PasswordResetTokenService passwordResetTokens;
 
     @Test
     void registerLoginAndCurrentUserUseRealPasswordAndBearerToken() throws Exception {
